@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.37 2000-11-28 04:36:35 megastep Exp $ */
+/* $Id: setupdb.c,v 1.38 2000-12-09 02:41:12 hercules Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -340,8 +340,13 @@ product_t *loki_openproduct(const char *name)
     strncpy(prod->info.root, str, sizeof(prod->info.root));
     str = xmlGetProp(doc->root, "update_url");
     strncpy(prod->info.url, str, sizeof(prod->info.url));
-    snprintf(prod->info.registry_path, sizeof(prod->info.registry_path), "%s/.manifest/%s.xml",
-             prod->info.root, prod->info.name);
+    if ( *name == '/' ) { /* Absolute path to a manifest.ini file */
+        strncpy(prod->info.registry_path, name,
+                sizeof(prod->info.registry_path));
+    } else {
+        snprintf(prod->info.registry_path, sizeof(prod->info.registry_path),
+                 "%s/.manifest/%s.xml", prod->info.root, prod->info.name);
+    }
 
     /* Check for the xmlversion attribute for backwards compatibility */
     str = xmlGetProp(doc->root, "xmlversion");
