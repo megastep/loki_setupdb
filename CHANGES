@@ -4,6 +4,11 @@ Stéphane Peter (Codehost) - Sun Jan 27 17:04:55 PST 2002
    Used by setup 1.6.0 for the 'check' utility.
  * De-Lokified setupdb by making the .loki prefix easily configurable
    in setupdb.h
+Stephane Peter (Codehost) - Wed Feb  6 16:41:01 PST 2002
+ * Log a path prefix for products.
+ * Register uninstallation messages for components.
+Stephane Peter (Codehost) - Tue Feb 26 17:29:16 PST 2002
+ * Initial Solaris 8 port.
 
 1.0.2:
 Sam Lantinga - Mon Apr 30 17:07:48 PDT 2001

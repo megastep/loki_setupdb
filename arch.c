@@ -1,4 +1,4 @@
-/* $Id: arch.c,v 1.4 2002-01-28 01:10:06 megastep Exp $ */
+/* $Id: arch.c,v 1.5 2002-04-03 08:05:02 megastep Exp $ */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -6,6 +6,7 @@
 #include <sys/utsname.h>
 #include <pwd.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "arch.h"
 
@@ -25,7 +26,12 @@ const char *detect_arch(void)
 #elif defined(__alpha__)
         arch = "alpha";
 #elif defined(__sparc__)
+#ifdef __sun 
+		/* SunOS / Solaris */
+		arch = "sun4u";
+#else /* Linux ? */
         arch = "sparc64";
+#endif
 #elif defined(__arm__)
         arch = "arm";
 #else
@@ -47,9 +53,7 @@ const char *detect_os(void)
 /* Function to detect the current version of libc */
 const char *detect_libc(void)
 {
-#ifdef __FreeBSD__
-	return "glibc-2.1";
-#else
+#ifdef __linux
     static const char *libclist[] = {
         "/lib/libc.so.6",
         "/lib/libc.so.6.1",
@@ -86,6 +90,8 @@ const char *detect_libc(void)
     }
     /* Default to version 5 */
     return "libc5";
+#else
+	return "glibc-2.1";
 #endif
 }
 
@@ -121,4 +127,122 @@ const char *detect_home(void)
     }
 
     return home;
+}
+
+/* Locate a version number in the string */
+static void find_version(const char *file,  int *maj, int *min)
+{
+	char line[256], *str, *s;
+	FILE *f = fopen(file, "r");
+
+	*maj = *min = 0;
+	if ( f ) {
+		for(;;) { /* Get the first non-blank line */
+			s = str = fgets(line, sizeof(line), f);
+			if ( s ) {
+				while( *s ) {
+					if ( ! isspace((int)*s) )
+						goto outta_here; /* Ugly, but gets us out of 2 loops */
+					s ++;
+				}
+			} else {
+				break;
+			}
+		}
+		
+	outta_here:
+		if ( str ) {
+			/* Skip anything that's not a number */
+			while ( *str && !isdigit((int)*str) ) {
+				++str;
+			}
+			
+			if ( *str ) {
+				sscanf(str, "%d.%d", maj, min);
+			}
+		}
+		fclose(f);
+	}
+}
+
+/* Locate a string in the file */
+static int find_string(const char *file, const char *tofind)
+{
+	int ret = 0;
+	FILE *f = fopen(file, "r");
+
+	if ( f ) {
+		char line[256], *str;
+		/* Read line by line */
+		while ( (str = fgets(line, sizeof(line), f)) != NULL ) {
+			if ( strstr(str, tofind) ) {
+				ret = 1;
+				break;
+			}
+		}
+		fclose(f);
+	}
+	return ret;
+}
+
+const char *distribution_name[NUM_DISTRIBUTIONS] = {
+	"N/A",
+	"RedHat Linux (or similar)",
+	"Mandrake Linux",
+	"SuSE Linux",
+	"Debian GNU/Linux (or similar)",
+	"Slackware",
+	"Caldera OpenLinux",
+	"Linux/PPC",
+	"Sun Solaris"
+};
+
+const char *distribution_symbol[NUM_DISTRIBUTIONS] = {
+	"none",
+	"redhat",
+	"mandrake",
+	"suse",
+	"debian",
+	"slackware",
+	"caldera",
+	"linuxppc",
+	"solaris"
+};
+
+/* Detect the distribution type and version */
+distribution detect_distro(int *maj_ver, int *min_ver)
+{
+#if defined(sun) && defined(__svr4__)
+	struct utsname n;
+	uname(&n);
+	sscanf(n.release, "%d.%d", maj_ver, min_ver);
+	return DISTRO_SOLARIS;
+#else
+	if ( !access("/etc/mandrake-release", F_OK) ) {
+		find_version("/etc/mandrake-release", maj_ver, min_ver); 
+		return DISTRO_MANDRAKE;
+	} else if ( !access("/etc/SuSE-release", F_OK) ) {
+		find_version("/etc/SuSE-release", maj_ver, min_ver); 
+		return DISTRO_SUSE;
+	} else if ( !access("/etc/redhat-release", F_OK) ) {
+		find_version("/etc/redhat-release", maj_ver, min_ver); 
+#if defined(PPC) || defined(powerpc)
+		/* Look for Linux/PPC */
+		if ( find_string("/etc/redhat-release", "Linux/PPC") ) {
+			return DISTRO_LINUXPPC;
+		}
+#endif
+		return DISTRO_REDHAT;
+	} else if ( !access("/etc/debian_version", F_OK) ) {
+		find_version("/etc/debian_version", maj_ver, min_ver); 
+		return DISTRO_DEBIAN;
+	} else if ( !access("/etc/slackware-version", F_OK) ) {
+		find_version("/etc/slackware-version", maj_ver, min_ver);
+		return DISTRO_SLACKWARE;
+	} else if ( find_string("/etc/issue", "OpenLinux") ) {
+		find_version("/etc/issue", maj_ver, min_ver);
+		return DISTRO_CALDERA;
+	}
+	return DISTRO_NONE; /* Couldn't recognize anything */
+#endif
 }

@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.42 2002-01-28 01:10:06 megastep Exp $ */
+/* $Id: setupdb.c,v 1.43 2002-04-03 08:05:02 megastep Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -13,6 +13,10 @@
 #include <ctype.h>
 #include <parser.h>
 #include <tree.h>
+
+#ifdef __sun__
+#include <sys/mkdev.h>
+#endif
 
 #include "setupdb.h"
 #include "arch.h"
@@ -208,7 +212,7 @@ void loki_split_version(const char *version, char *base, int maxbase,
     if ( *version == '*' ) {
         *base++ = *version++;
     } else {
-        while ( --maxbase && (isalnum(*version) || (*version == '.')) ) {
+        while ( --maxbase && (isalnum((int)*version) || (*version == '.')) ) {
             *base++ = *version++;
         }
     }
@@ -222,7 +226,7 @@ void loki_split_version(const char *version, char *base, int maxbase,
 
 static void get_word(const char **string, char *word, int maxlen)
 {
-    while ( (maxlen > 0) && **string && isalpha(**string) ) {
+    while ( (maxlen > 0) && **string && isalpha((int)**string) ) {
         *word = **string;
         ++word;
         ++*string;
@@ -236,7 +240,7 @@ static int get_num(const char **string)
     int num;
 
     num = atoi(*string);
-    while ( isdigit(**string) ) {
+    while ( isdigit((int)**string) ) {
         ++*string;
     }
     return(num);
@@ -257,9 +261,9 @@ int loki_newer_version(const char *version1, const char *version2)
     loki_split_version(version2, base2, sizeof(base2), ext2, sizeof(ext2));
     version2 = base2;
     while ( !newer && (*version1 && *version2) &&
-            ((isdigit(*version1) && isdigit(*version2)) ||
-             (isalpha(*version1) && isalpha(*version2))) ) {
-        if ( isdigit(*version1) ) {
+            ((isdigit((int)*version1) && isdigit((int)*version2)) ||
+             (isalpha((int)*version1) && isalpha((int)*version2))) ) {
+        if ( isdigit((int)*version1) ) {
             num1 = get_num(&version1);
             num2 = get_num(&version2);
             if ( num1 != num2 ) {
@@ -279,7 +283,7 @@ int loki_newer_version(const char *version1, const char *version2)
             ++version2;
         }
     }
-    if ( isalpha(*version1) && !isalpha(*version2) ) {
+    if ( isalpha((int)*version1) && !isalpha((int)*version2) ) {
         newer = 1;
     }
     return(newer);
@@ -338,6 +342,12 @@ product_t *loki_openproduct(const char *name)
     }
     str = xmlGetProp(doc->root, "root");
     strncpy(prod->info.root, str, sizeof(prod->info.root));
+    str = xmlGetProp(doc->root, "prefix");
+	if ( str ) {
+		strncpy(prod->info.prefix, str, sizeof(prod->info.prefix));
+	} else {
+		strcpy(prod->info.prefix, ".");
+	}
     str = xmlGetProp(doc->root, "update_url");
     strncpy(prod->info.url, str, sizeof(prod->info.url));
     if ( *name == '/' ) { /* Absolute path to a manifest.ini file */
@@ -539,6 +549,7 @@ product_t *loki_create_product(const char *name, const char *root, const char *d
     strncpy(prod->info.root, root, sizeof(prod->info.root));
     xmlSetProp(doc->root, "root", root);
     strncpy(prod->info.url, url, sizeof(prod->info.url));
+    strcpy(prod->info.prefix, ".");
     xmlSetProp(doc->root, "update_url", url);
     snprintf(prod->info.registry_path, sizeof(prod->info.registry_path), "%s/.manifest/%s.xml",
              root, name);
@@ -552,6 +563,14 @@ void loki_setroot_product(product_t *product, const char *root)
 {
     strncpy(product->info.root, root, sizeof(product->info.root));
     xmlSetProp(product->doc->root, "root", root);
+    product->changed = 1;
+}
+
+/* Set a path prefix for the installation media for the product */
+void loki_setprefix_product(product_t *product, const char *prefix)
+{
+    strncpy(product->info.prefix, prefix, sizeof(product->info.prefix));
+    xmlSetProp(product->doc->root, "prefix", prefix);
     product->changed = 1;
 }
 
@@ -719,6 +738,40 @@ const char *loki_getname_component(product_component_t *component)
 const char *loki_getversion_component(product_component_t *component)
 {
     return component->version;
+}
+
+/* Uninstallation messages displayed to the user when the component is removed */
+const char *loki_getmessage_component(product_component_t *comp)
+{
+	xmlNodePtr node;
+
+	/* Look for a <message> tag */
+	for ( node = comp->node->childs; node; node = node->next ) {
+		if ( !strcmp(node->name, "message") ) {
+			return get_xml_string(comp->product, node);
+		}
+	}
+	return NULL;
+}
+
+void loki_setmessage_component(product_component_t *comp, const char *msg)
+{
+	xmlNodePtr node;
+
+	comp->product->changed = 1;
+	/* Look for a <message> tag */
+	for ( node = comp->node->childs; node; node = node->next ) {
+		if ( !strcmp(node->name, "message") ) {
+			/* Remove the existing node */
+			xmlUnlinkNode(node);
+			xmlFreeNode(node);
+			break;
+		}
+	}
+
+	if ( msg ) {
+		xmlNewChild(comp->node, NULL, "message", substitute_xml_string(msg));
+	}
 }
 
 size_t loki_getsize_component(product_component_t *component)

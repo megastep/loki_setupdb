@@ -40,16 +40,18 @@
 #endif
 
 #ifdef WIN32
-#define BIG_ENDIAN  0
-#define LIL_ENDIAN  1
-#define BYTE_ORDER  LIL_ENDIAN
+# define BIG_ENDIAN  0
+# define LIL_ENDIAN  1
+# define BYTE_ORDER  LIL_ENDIAN
 #else
-#define HAVE_FTW
-#ifdef __FreeBSD__
-#include <machine/endian.h>
-#else
-#include <endian.h>
-#endif
+# define HAVE_FTW
+# ifdef __FreeBSD__
+#   include <machine/endian.h>
+# elif defined(__svr4__)
+#   include <sys/byteorder.h>
+# else
+#  include <endian.h>
+# endif
 #endif /* WIN32 */
 
 #include "md5.h"

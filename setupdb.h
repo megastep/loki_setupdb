@@ -7,7 +7,7 @@
 #include <limits.h>
 
 #ifndef LOKI_PREFIX
-#define LOKI_PREFIX "loki"
+#define LOKI_PREFIX "samsung"
 #endif
 
 /* This is the user's directory where everything is stored */
@@ -39,6 +39,7 @@ typedef struct {
     char root[PATH_MAX];
     char url[PATH_MAX];
     char registry_path[PATH_MAX];
+	char prefix[PATH_MAX];
 } product_info_t;
 
 typedef enum {
@@ -79,12 +80,13 @@ product_t *loki_openproduct(const char *name);
 product_t *loki_create_product(const char *name, const char *root, const char *desc, const char *url);
 
 /* Set the install path of a product */
-
 void loki_setroot_product(product_t *product, const char *root);
 
 /* Set the update URL of a product */
-
 void loki_setupdateurl_product(product_t *product, const char *url);
+
+/* Set a path prefix for the installation media for the product */
+void loki_setprefix_product(product_t *product, const char *prefix);
 
 /* Close a product entry and free all allocated memory.
    Also writes back to the database all changes that may have been made.
@@ -115,6 +117,10 @@ const char *loki_getversion_component(product_component_t *comp);
 size_t loki_getsize_component(product_component_t *comp);
 void loki_setversion_component(product_component_t *comp, const char *version);
 int loki_isdefault_component(product_component_t *comp);
+
+/* Uninstallation messages displayed to the user when the component is removed */
+const char *loki_getmessage_component(product_component_t *comp);
+void loki_setmessage_component(product_component_t *comp, const char *msg);
 
 /* Change the default component */
 void loki_setdefault_component(product_component_t *comp);
