@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.5 2000-10-12 00:30:23 megastep Exp $ */
+/* $Id: setupdb.c,v 1.6 2000-10-12 00:57:02 megastep Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -646,7 +646,10 @@ unsigned int loki_getmode_file(product_file_t *file)
 /* Set the UNIX mode for the file */
 void loki_setmode_file(product_file_t *file, unsigned int mode)
 {
+    char buf[20];
     file->mode = mode;
+    snprintf(buf, sizeof(buf), "%04o", mode);
+    xmlSetProp(file->node, "mode", buf);
     file->option->component->product->changed = 1;
 }
 
