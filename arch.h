@@ -48,6 +48,7 @@ typedef enum {
 	DISTRO_IRIX,
 	DISTRO_SCO,
 	DISTRO_AIX,
+	DISTRO_DARWIN,
 	NUM_DISTRIBUTIONS
 } distribution;
 

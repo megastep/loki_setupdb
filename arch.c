@@ -1,4 +1,4 @@
-/* $Id: arch.c,v 1.13 2003-03-21 07:34:37 megastep Exp $ */
+/* $Id: arch.c,v 1.14 2003-03-29 23:56:20 megastep Exp $ */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -208,7 +208,8 @@ const char *distribution_name[NUM_DISTRIBUTIONS] = {
 	"HP-UX",
 	"SGI IRIX",
 	"SCO UnixWare/OpenServer",
-	"IBM AIX"
+	"IBM AIX",
+	"MacOS X / Darwin"
 };
 
 const char *distribution_symbol[NUM_DISTRIBUTIONS] = {
@@ -227,7 +228,8 @@ const char *distribution_symbol[NUM_DISTRIBUTIONS] = {
 	"hpux",
 	"irix",
 	"sco",
-	"aix"
+	"aix",
+	"darwin"
 };
 
 /* Detect the distribution type and version */
@@ -264,6 +266,11 @@ distribution detect_distro(int *maj_ver, int *min_ver)
 	uname(&n);
 	sscanf(n.release, "%d.%d", maj_ver, min_ver);
 	return DISTRO_FREEBSD;
+#elif defined(__APPLE__)
+	struct utsname n;
+	uname(&n);
+	sscanf(n.release, "%d.%d", maj_ver, min_ver);
+	return DISTRO_DARWIN;
 #else
 	if ( !access("/etc/mandrake-release", F_OK) ) {
 		find_version("/etc/mandrake-release", maj_ver, min_ver); 
