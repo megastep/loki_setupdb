@@ -1,4 +1,4 @@
-/* $Id: arch.c,v 1.15 2004-02-25 04:10:32 icculus Exp $ */
+/* $Id: arch.c,v 1.16 2004-04-29 18:39:54 megastep Exp $ */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -201,6 +201,7 @@ const char *distribution_name[NUM_DISTRIBUTIONS] = {
 	"SuSE Linux",
 	"Debian GNU/Linux (or similar)",
 	"Slackware",
+	"Gentoo",
 	"Caldera OpenLinux",
 	"Linux/PPC",
 	"Yellow Dog Linux",
@@ -221,6 +222,7 @@ const char *distribution_symbol[NUM_DISTRIBUTIONS] = {
 	"suse",
 	"debian",
 	"slackware",
+	"gentoo",
 	"caldera",
 	"linuxppc",
 	"yellowdog",
@@ -302,6 +304,9 @@ distribution detect_distro(int *maj_ver, int *min_ver)
 	} else if ( !access("/etc/slackware-version", F_OK) ) {
 		find_version("/etc/slackware-version", maj_ver, min_ver);
 		return DISTRO_SLACKWARE;
+	} else if ( !access("/etc/gentoo-release", F_OK) ) {
+		find_version("/etc/gentoo-release", maj_ver, min_ver);
+		return DISTRO_GENTOO;
 	} else if ( find_string("/etc/issue", "OpenLinux") ) {
 		find_version("/etc/issue", maj_ver, min_ver);
 		return DISTRO_CALDERA;

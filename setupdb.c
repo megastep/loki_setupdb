@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.59 2004-04-22 00:36:15 megastep Exp $ */
+/* $Id: setupdb.c,v 1.60 2004-04-29 18:39:54 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -18,6 +18,7 @@
 #include <ctype.h>
 #include <parser.h>
 #include <tree.h>
+#include <xmlmemory.h>
 
 #ifdef HAVE_SYS_MKDEV_H
 #include <sys/mkdev.h>
