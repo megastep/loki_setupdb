@@ -1,9 +1,10 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.13 2000-10-17 04:07:05 megastep Exp $ */
+/* $Id: setupdb.c,v 1.14 2000-10-17 04:47:37 megastep Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/utsname.h>
@@ -1146,6 +1147,43 @@ int loki_runscripts(product_component_t *comp, script_type_t type)
     return count;
 }
 
+/* This copies a binary that might be from a CD mounted with noexec attributes to 
+   a temporary place where we are sure to be able to run it */
+static const char *copy_binary_to_tmp(const char *path)
+{
+    int dst, src;
+    static char tmppath[PATH_MAX];
+    struct stat st;
+    void *buffer;
+
+    strcpy(tmppath, "/tmp/setupdb-bin.XXXXXX");
+
+    dst = mkstemp(tmppath);
+    if ( dst < 0 ) {
+        perror("mkstemp");
+        return NULL;
+    }
+
+    src = open(path, O_RDONLY);
+    if ( src < 0 ) {
+        perror("open");
+        return NULL;
+    }
+
+    fstat(src, &st);
+    buffer = malloc(st.st_size);
+
+    read(src, buffer, st.st_size);
+    write(dst, buffer, st.st_size);
+
+    free(buffer);
+    close(src);
+    fchmod(dst, 0755);
+    close(dst);
+
+    return tmppath;
+}
+
 /* Perform automatic update of the uninstaller binaries and script.
    'src' is the path where updated binaries can be copied from.
  */
@@ -1181,13 +1219,19 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins)
         pipe = popen(cmd, "r");
         if ( pipe ) {
             int major, minor, rel;
+            const char *tmpbin;
+
             /* Try to see if we have to update it */
             fscanf(pipe, "%d.%d.%d", &major, &minor, &rel);
             pclose(pipe);
 
             /* Now check against the version of the binaries we have */
-
-            snprintf(cmd, sizeof(cmd), "%s --version", src_bins);
+            tmpbin = copy_binary_to_tmp(src_bins);
+            if ( tmpbin ) {
+                snprintf(cmd, sizeof(cmd), "%s --version", tmpbin);
+            } else { /* We still try to run it if the copy failed for some reason */
+                snprintf(cmd, sizeof(cmd), "%s --version", src_bins);
+            }
             pipe = popen(cmd, "r");
             if ( pipe ) {
                 int our_maj, our_min, our_rel;
@@ -1200,6 +1244,9 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins)
                     /* Perform the upgrade, overwrite the uninstall binary */
                     perform_upgrade = 1;
                 }
+            }
+            if ( tmpbin ) { /* Remove the copied binary */
+                unlink(tmpbin);
             }
         } else {
             perror("popen");
