@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.8 2000-10-14 01:06:33 hercules Exp $ */
+/* $Id: setupdb.c,v 1.9 2000-10-14 01:11:20 hercules Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -222,7 +222,7 @@ product_t *loki_openproduct(const char *name)
 
                         memset(file->data.md5sum, 0, 16);
                         if ( !strcmp(filenode->name, "file") ) {
-                            const char *md5 = xmlGetProp(filenode, "md5sum");
+                            const char *md5 = xmlGetProp(filenode, "md5");
                             t = LOKI_FILE_REGULAR;
                             if ( md5 ) 
                                 memcpy(file->data.md5sum, get_md5_bin(md5), 16);
