@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.34 2000-11-22 21:58:32 megastep Exp $ */
+/* $Id: setupdb.c,v 1.35 2000-11-27 23:46:00 megastep Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -1726,7 +1726,7 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
                 "        exit 1\n"
                 "    fi\n"
                 "fi\n"
-                "\"$UNINSTALL\" \"%s\" $*",
+                "\"$UNINSTALL\" \"%s\" \"$1\"",
                 SETUPDB_VERSION_MAJOR, SETUPDB_VERSION_MINOR,
                 pinfo->registry_path);
         fchmod(fileno(scr), 0755);
