@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.15 2000-10-17 08:55:43 megastep Exp $ */
+/* $Id: setupdb.c,v 1.16 2000-10-17 09:13:22 megastep Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -331,8 +331,9 @@ product_t *loki_create_product(const char *name, const char *root, const char *d
 
 
     /* Symlink the file in the 'installed' per-user directory */
+    unlink(homefile);
     if ( symlink(manifest, homefile) < 0 )
-        perror("symlink");
+        fprintf(stderr, "Could not create symlink : %s\n", homefile);
 
 	/* Create the scripts subdirectory */
 	snprintf(manifest, sizeof(manifest), "%s/.manifest/scripts", root);
