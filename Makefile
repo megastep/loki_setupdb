@@ -1,6 +1,6 @@
 #
 # Makefile for the Loki registry library
-# $Id: Makefile,v 1.13 2000-11-03 02:52:21 hercules Exp $
+# $Id: Makefile,v 1.14 2000-11-22 21:58:32 megastep Exp $
 #
 
 CC		:= gcc
@@ -32,8 +32,8 @@ convert: $(ARCH) $(ARCH)/convert.o $(TARGET)
 	strip $@
 	brandelf -t $(OS) $@
 
-install: convert
-	@cp -v convert $(IMAGE)/bin/$(OS)/$(ARCH)/
+install: convert register
+	@cp -v convert register $(IMAGE)/bin/$(OS)/$(ARCH)/
 
 brandelf: $(ARCH) $(ARCH)/brandelf.o
 	$(CC) -o $@ $(ARCH)/brandelf.o
@@ -43,12 +43,17 @@ md5sum: md5.c
 	strip $@
 	brandelf -t $(OS) $@
 
+register: register.c
+	$(CC) $(CFLAGS) -o $@ register.c $(TARGET) $(LIBS) -static
+	strip $@
+	brandelf -t $(OS) $@
+
 clean:
 	rm -f $(ARCH)/*.o *~
 
 distclean: clean
 	rm -f $(ARCH)/*.a
-	rm -f convert md5sum brandelf
+	rm -f convert md5sum brandelf register
 
 dep: depend
 

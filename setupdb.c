@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.33 2000-11-14 22:29:35 hercules Exp $ */
+/* $Id: setupdb.c,v 1.34 2000-11-22 21:58:32 megastep Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -1281,11 +1281,13 @@ int loki_unregister_path(product_option_t *option, const char *path)
 
 int loki_unregister_file(product_file_t *file)
 {
-    product_option_t *option = file->option;
-    if ( option ) { /* Does not work for scripts anyway */
-        unregister_file(file, &option->files);
-        option->component->product->changed = 1;
-        return 0;
+    if ( file ) {
+        product_option_t *option = file->option;
+        if ( option ) { /* Does not work for scripts anyway */
+            unregister_file(file, &option->files);
+            option->component->product->changed = 1;
+            return 0;
+        }
     }
     return -1;
 }
