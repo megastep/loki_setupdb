@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.28 2000-10-31 17:57:34 hercules Exp $ */
+/* $Id: setupdb.c,v 1.29 2000-11-03 02:50:45 hercules Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -1130,6 +1130,10 @@ product_file_t *loki_register_file(product_option_t *option, const char *path, c
     if ( file ) {
         return registerfile_update(option, file, md5);
     } else {
+        file = loki_findpath(path, option->component->product);
+        if ( file ) {
+            loki_unregister_file(file);
+        }
         return registerfile_new(option, path, md5);
     }
 }
