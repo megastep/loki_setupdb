@@ -3,6 +3,7 @@
 
 /* High-level library for product management */
 
+#include <sys/types.h>
 #include <limits.h>
 
 #ifdef __cplusplus
@@ -91,6 +92,7 @@ product_component_t *loki_find_component(product_t *product, const char *name);
 
 const char *loki_getname_component(product_component_t *comp);
 const char *loki_getversion_component(product_component_t *comp);
+size_t loki_getsize_component(product_component_t *comp);
 void loki_setversion_component(product_component_t *comp, const char *version);
 int loki_isdefault_component(product_component_t *comp);
 
@@ -115,6 +117,7 @@ product_option_t *loki_getnext_option(product_option_t *option);
 product_option_t *loki_find_option(product_component_t *comp, const char *name);
 
 const char *loki_getname_option(product_option_t *opt);
+size_t loki_getsize_option(product_option_t *opt);
 
 product_option_t *loki_create_option(product_component_t *comp, const char *name);
 

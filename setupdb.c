@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.32 2000-11-11 00:51:15 megastep Exp $ */
+/* $Id: setupdb.c,v 1.33 2000-11-14 22:29:35 hercules Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -689,6 +689,19 @@ const char *loki_getversion_component(product_component_t *component)
     return component->version;
 }
 
+size_t loki_getsize_component(product_component_t *component)
+{
+    size_t size = 0;
+    product_option_t *option;
+
+    for ( option = loki_getfirst_option(component);
+          option;
+          option = loki_getnext_option(option) ) {
+        size += loki_getsize_option(option);
+    }
+    return size;
+}
+
 int loki_isdefault_component(product_component_t *comp)
 {
     return comp->is_default;
@@ -853,6 +866,22 @@ product_option_t *loki_find_option(product_component_t *comp, const char *name)
 const char *loki_getname_option(product_option_t *opt)
 {
     return opt->name;
+}
+
+size_t loki_getsize_option(product_option_t *opt)
+{
+    size_t size = 0;
+    product_file_t *file;
+    struct stat sb;
+
+    for ( file = loki_getfirst_file(opt);
+          file;
+          file = loki_getnext_file(file) ) {
+        if ( stat(loki_getpath_file(file), &sb) == 0 ) {
+            size += sb.st_size;
+        }
+    }
+    return size;
 }
 
 product_option_t *loki_create_option(product_component_t *component, const char *name)
