@@ -1,4 +1,4 @@
-/* $Id: arch.c,v 1.7 2002-10-19 07:01:49 megastep Exp $ */
+/* $Id: arch.c,v 1.8 2002-12-07 00:52:41 megastep Exp $ */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -113,7 +113,6 @@ const char *detect_home(void)
      */
     if ( ! home ) {
         struct passwd *pwent;
-
         pwent = getpwuid(geteuid());
         if ( pwent ) {
             /* Small memory leak, don't worry about it */

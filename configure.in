@@ -12,7 +12,7 @@ PACKAGE_TARNAME="setupdb"
 PACKAGE_VERSION="$SETUPDB_VERSION_MAJOR.$SETUPDB_VERSION_MINOR.$SETUPDB_VERSION_RELEASE"
 PACKAGE_STRING="$PACKAGE_NAME v$PACKAGE_VERSION"
 
-CFLAGS="-fsigned-char -Wall -g -O2 -I."
+CFLAGS="-fsigned-char -Wall -g -O2 -I. -D_REENTRANT"
 
 dnl Detect the canonical host and target build environment
 AC_CANONICAL_HOST
@@ -41,6 +41,8 @@ case "$target" in
 	ARCH=hppa ;;
     *sgi*)
 	ARCH=mips ;;
+    *ppc* | *powerpc*)
+        ARCH=ppc ;;
     *)
         ARCH=`uname -p 2> /dev/null || uname -m`
 	if test "$ARCH" = powerpc; then
@@ -51,6 +53,9 @@ esac
 
 dnl Add architecture-specific compile flags
 case "$target" in
+    powerpc*-*-linux*)
+        CFLAGS="$CFLAGS -Wa,-mall"
+	;;
     alpha*-*-linux*)
         if test x$ac_cv_c_compiler_gnu = xyes; then
             CFLAGS="$CFLAGS -mcpu=ev4 -Wa,-mall"

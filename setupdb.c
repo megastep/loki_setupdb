@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.45 2002-10-19 07:01:49 megastep Exp $ */
+/* $Id: setupdb.c,v 1.46 2002-12-07 00:52:41 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -1288,7 +1288,10 @@ static product_file_t *registerfile_new(product_option_t *option, const char *pa
         return NULL;
     }
     file->patched = 0;
-    file->mode = 0644;
+	/* Get the actual mode from the file */
+    file->mode = (st.st_mode & 07777);
+	snprintf(dev, sizeof(dev), "%04o", file->mode);
+    xmlSetProp(file->node, "mode", dev);
     file->option = option;
     insert_end_file(file, &option->files);
 
@@ -1738,8 +1741,13 @@ static const char *copy_binary_to_tmp(const char *path)
     static char tmppath[PATH_MAX];
     struct stat st;
     void *buffer;
+	const char *env = getenv("TMPDIR");
 
-    strcpy(tmppath, "/tmp/setupdb-bin.XXXXXX");
+	if ( env ) {
+		snprintf(tmppath, sizeof(tmppath), "%s/setupdb-bin.XXXXXX", env);
+	} else {
+		strcpy(tmppath, "/tmp/setupdb-bin.XXXXXX");
+	}
 
     dst = mkstemp(tmppath);
     if ( dst < 0 ) {
@@ -1930,40 +1938,40 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
                 "        case `uname -m` in\n"
                 "           i?86)  echo \"x86\"\n"
                 "                  status=0;;\n"
-		"           90*/*)\n"
-		"		   echo \"hppa\"\n"
-		"		   status=0;;\n"
-		"	    *)\n"
-		"		case `uname -s` in\n"
-		"		    IRIX*)\n"
-		"			echo \"mips\"\n"
-		"			status=0;;\n"
-		"		    *)\n"
-		"			arch=`uname -p 2>/dev/null || uname -m`\n"
-		"                       if test \"$arch\" = powerpc; then\n"
-		"                          echo \"ppc\"\n"
-		"                       else\n"
-		"                          echo $arch\n"
-		"                       fi\n"
-		"			status=0;;\n"
-		"		esac\n"
-		"        esac\n"
+				"           90*/*)\n"
+				"		   echo \"hppa\"\n"
+				"		   status=0;;\n"
+				"	    *)\n"
+				"		case `uname -s` in\n"
+				"		    IRIX*)\n"
+				"			echo \"mips\"\n"
+				"			status=0;;\n"
+				"		    *)\n"
+				"			arch=`uname -p 2>/dev/null || uname -m`\n"
+				"                       if test \"$arch\" = powerpc; then\n"
+				"                          echo \"ppc\"\n"
+				"                       else\n"
+				"                          echo $arch\n"
+				"                       fi\n"
+				"			status=0;;\n"
+				"		esac\n"
+				"        esac\n"
                 "        return $status\n"
                 "}\n\n"
 
-		"DetectOS()\n"
-		"{\n"
-		"  os=`uname -s`\n"
-		"  if test \"$os\" = OpenUNIX; then\n"
-		"     echo SCO_SV\n"
-		"  else\n"
-		"     echo $os\n"
-		"  fi\n"
-		"  return 0\n"
-		"}\n\n"
+				"DetectOS()\n"
+				"{\n"
+				"  os=`uname -s`\n"
+				"  if test \"$os\" = OpenUNIX; then\n"
+				"     echo SCO_SV\n"
+				"  else\n"
+				"     echo $os\n"
+				"  fi\n"
+				"  return 0\n"
+				"}\n\n"
 
-                "if type " LOKI_PREFIX "-uninstall 2>&1 > /dev/null || which "
-		LOKI_PREFIX "-uninstall 2>&1 > /dev/null; then\n"
+                "if which " LOKI_PREFIX "-uninstall 2> /dev/null > /dev/null || type -p "
+				LOKI_PREFIX "-uninstall 2> /dev/null > /dev/null; then\n"
                 "    UNINSTALL=" LOKI_PREFIX "-uninstall\n"
                 "else\n"
                 "    UNINSTALL=\"$HOME/" LOKI_DIRNAME "/installed/bin/`DetectOS`/`DetectARCH`/uninstall\"\n"

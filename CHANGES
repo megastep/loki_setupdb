@@ -8,6 +8,9 @@ Stephane Peter (Codehost) - Fri Sep 27 14:51:50 PDT 2002
  * Detect TurboLinux
 Stephane Peter (Codehost) - Tue Oct  8 19:12:22 PDT 2002
  * Initial AIX 5.1 support
+Stephane Peter (Codehost) - Mon Nov 11 16:05:01 PST 2002
+ * Always get the permissions from the file itself, and store
+   it in the XML file instead of assuming 644.
 
 1.0.3:
 Stéphane Peter (Codehost) - Sun Jan 27 17:04:55 PST 2002
