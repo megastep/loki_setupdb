@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.67 2004-11-11 01:39:29 megastep Exp $ */
+/* $Id: setupdb.c,v 1.68 2005-01-25 03:01:28 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -115,6 +115,17 @@ static char *expand_path(product_t *prod, const char *path, char *buf, size_t le
         snprintf(buf, len, "%s/%s", prod->info.root, path);
     }
     return loki_trim_slashes(buf);
+}
+
+const char *loki_basename(const char *file)
+{
+	if ( file ) {
+		const char *ret = strrchr(file, '/');
+		if ( ret ) {
+			return ret+1;
+		}
+	}
+	return file;
 }
 
 /* Remove the install path component from the filename to obtain a relative path */

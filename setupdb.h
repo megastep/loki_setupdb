@@ -194,6 +194,9 @@ product_file_t *loki_findpath(const char *path, product_t *product);
 /* Remove the install path component from the filename to obtain a relative path */
 const char *loki_remove_root(const product_t *prod, const char *path);
 
+/* Same as 'basename' command */
+const char *loki_basename(const char *file);
+
 /* Utility function : remove trailing slashes from a string */
 char *loki_trim_slashes(char *str);
 
