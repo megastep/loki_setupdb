@@ -23,6 +23,9 @@ typedef struct _loki_product_component_t product_component_t;
 struct _loki_product_option_t;
 typedef struct _loki_product_option_t product_option_t;
 
+struct _loki_product_file_t;
+typedef struct _loki_product_file_t product_file_t;
+
 typedef struct {
     char name[64];
     char description[128];
@@ -46,18 +49,6 @@ typedef enum {
     LOKI_SCRIPT_PREUNINSTALL = 0,
     LOKI_SCRIPT_POSTUNINSTALL
 } script_type_t;
-
-typedef struct {
-    char path[PATH_MAX]; /* Absolute path of the file */
-    unsigned char md5sum[16];
-    file_type_t type;
-} product_file_t;
-
-typedef struct {
-    char *path; /* Absolute path */
-    product_component_t  *component;
-    product_option_t *option;
-} file_info_t;
 
 /* Enumerate all products, returns name or NULL if end of list */
 
@@ -97,10 +88,6 @@ product_component_t *loki_getnext_component(product_component_t *comp);
 product_component_t *loki_getdefault_component(product_t *product);
 product_component_t *loki_find_component(product_t *product, const char *name);
 
-
-/* Frees the memory allocated for this iterator */
-void loki_free_component(product_component_t *version);
-
 const char *loki_getname_component(product_component_t *comp);
 const char *loki_getversion_component(product_component_t *comp);
 int loki_isdefault_component(product_component_t *comp);
@@ -121,18 +108,25 @@ product_option_t *loki_getnext_option(product_option_t *option);
 /* The returned enumerator has to be explicitly freed */
 product_option_t *loki_find_option(product_component_t *comp, const char *name);
 
-const char *loki_getoptionname(product_option_t *opt);
+const char *loki_getname_option(product_option_t *opt);
 
 product_option_t *loki_create_option(product_component_t *comp, const char *name);
-
-/* Frees the memory allocated for this iterator */
-void loki_free_option(product_option_t *opt);
 
 
 /* Enumerate files from components */
 
 product_file_t *loki_getfirst_file(product_option_t *opt);
-product_file_t *loki_getnext_file(product_option_t *opt);
+product_file_t *loki_getnext_file(product_file_t *file);
+
+/* Get informations from a file */
+file_type_t loki_gettype_file(product_file_t *file);
+/* This returns the expanded full path of the file if applicable */
+const char *loki_getpath_file(product_file_t *file);
+unsigned char *loki_getmd5_file(product_file_t *file);
+
+product_option_t *loki_getoption_file(product_file_t *file);
+product_component_t *loki_getcomponent_file(product_file_t *file);
+product_t *loki_getproduct_file(product_file_t *file);
 
 /* Callback function type for file enumerations */
 typedef void (*product_file_cb)(const char *path, file_type_t type,
@@ -144,31 +138,27 @@ int loki_enumerate_files(product_option_t *opt, product_file_cb cb);
 
 /* Find to which product / option a file belongs; 'product' is optional */
 
-file_info_t *loki_findpath(const char *path, product_t *product);
-
-/* This function needs to be called to dispose of the memory allocated by findpath() */
-void loki_free_fileinfo(file_info_t *file);
+product_file_t *loki_findpath(const char *path, product_t *product);
 
 /* Register a new file, returns 0 if OK. The option is created if it didn't exist before.
    The md5 argument can be NULL, and the checksum will be computed if necesary.
  */
-int loki_registerfile(product_option_t *option, const char *path, const char *md5);
+int loki_register_file(product_option_t *option, const char *path, const char *md5);
 
 /* Remove a file from the registry. Actually removing the file is up to the caller. */
-int loki_unregisterfile(product_option_t *option, const char *path);
-
-/* Update the MD5 sum of the file being enumerated */
-int loki_updatemd5filecurrent(product_option_t *option);
+int loki_unregister_path(product_option_t *option, const char *path);
+/* Variant using an iterator */
+int loki_unregister_file(product_file_t *file);
 
 /* Update the MD5 sum of a specific file */
-int loki_updatemd5file(product_t *product, const char *path);
+int loki_updatemd5_file(product_t *product, const char *path);
 
 /* Register a new RPM as having been installed by this product */
-int loki_registerrpm(product_option_t *option, const char *name, const char *version, int revision,
+int loki_register_rpm(product_option_t *option, const char *name, const char *version, int revision,
                      int autoremove);
 
 /* Remove a RPM from the registry */
-int loki_unregisterprm(product_t *product, const char *name);
+int loki_unregister_rpm(product_t *product, const char *name);
 
   /**** Script registration: option variant *****/
 /* Register a new script for the product. 'script' holds the whole script in one string */
@@ -189,7 +179,7 @@ int loki_registerscript_fromfile_component(product_component_t *comp, script_typ
                                            const char *name, const char *path);
 
 /* Unregister a registered script, and remove the file */
-int loki_unregisterscript(product_component_t *component, const char *name);
+int loki_unregister_script(product_component_t *component, const char *name);
 
 /* Run all scripts of a given type, returns the number of scripts successfully run */
 int loki_runscripts(product_component_t *component, script_type_t type);
