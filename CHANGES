@@ -2,6 +2,12 @@
 Stephane Peter (Codehost) - Fri Sep 13 18:37:26 PDT 2002
  * Changed versioning scheme to be in sync with Setup version
    numbers.
+Stephane Peter (Codehost) - Thu Sep 26 18:43:16 PDT 2002
+ * Support tag for options.
+Stephane Peter (Codehost) - Fri Sep 27 14:51:50 PDT 2002
+ * Detect TurboLinux
+Stephane Peter (Codehost) - Tue Oct  8 19:12:22 PDT 2002
+ * Initial AIX 5.1 support
 
 1.0.3:
 Stéphane Peter (Codehost) - Sun Jan 27 17:04:55 PST 2002

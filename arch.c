@@ -1,4 +1,4 @@
-/* $Id: arch.c,v 1.6 2002-09-17 22:14:39 megastep Exp $ */
+/* $Id: arch.c,v 1.7 2002-10-19 07:01:49 megastep Exp $ */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -21,14 +21,14 @@ const char *detect_arch(void)
     if ( arch == NULL ) {
 #ifdef __i386
         arch = "x86";
-#elif defined(powerpc)
+#elif defined(powerpc) || defined(_POWER)
         arch = "ppc";
 #elif defined(__alpha__)
         arch = "alpha";
 #elif defined(__sparc__)
 #ifdef __sun 
-		/* SunOS / Solaris */
-		arch = "sun4u";
+	/* SunOS / Solaris */
+	arch = "sparc";
 #else /* Linux ? */
         arch = "sparc64";
 #endif
@@ -203,6 +203,7 @@ const char *distribution_name[NUM_DISTRIBUTIONS] = {
 	"Caldera OpenLinux",
 	"Linux/PPC",
 	"Yellow Dog Linux",
+	"TurboLinux",
 	"FreeBSD",
 	"Sun Solaris",
 	"HP-UX",
@@ -221,6 +222,7 @@ const char *distribution_symbol[NUM_DISTRIBUTIONS] = {
 	"caldera",
 	"linuxppc",
 	"yellowdog",
+	"turbo",
 	"freebsd",
 	"solaris",
 	"hpux",
@@ -247,6 +249,12 @@ distribution detect_distro(int *maj_ver, int *min_ver)
 	uname(&n);
 	sscanf(n.release, "%d.%d", maj_ver, min_ver);
 	return DISTRO_IRIX;
+#elif defined(_AIX)
+	struct utsname n;
+	uname(&n);
+	sscanf(n.version, "%d", maj_ver);
+	sscanf(n.release, "%d", min_ver);
+	return DISTRO_AIX;
 #elif defined(sco)
 	struct utsname n;
 	uname(&n);
@@ -268,6 +276,9 @@ distribution detect_distro(int *maj_ver, int *min_ver)
 	} else if ( !access("/etc/yellowdog-release", F_OK) ) {
 		find_version("/etc/yellowdog-release", maj_ver, min_ver); 
 		return DISTRO_YELLOWDOG;
+	} else if ( !access("/etc/turbolinux-release", F_OK) ) {
+		find_version("/etc/turbolinux-release", maj_ver, min_ver); 
+		return DISTRO_TURBO;
 	} else if ( !access("/etc/redhat-release", F_OK) ) {
 		find_version("/etc/redhat-release", maj_ver, min_ver); 
 #if defined(PPC) || defined(powerpc)

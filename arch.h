@@ -17,6 +17,8 @@
 #   include <sys/byteorder.h>
 # elif defined(hpux)
 #   include <arpa/nameser.h>
+# elif defined(_AIX)
+#   include <sys/machine.h>
 # else
 #  include <endian.h>
 # endif
@@ -37,6 +39,7 @@ typedef enum {
 	DISTRO_CALDERA,
 	DISTRO_LINUXPPC,
 	DISTRO_YELLOWDOG,
+	DISTRO_TURBO,
 	DISTRO_FREEBSD,
 	DISTRO_SOLARIS,
 	DISTRO_HPUX,

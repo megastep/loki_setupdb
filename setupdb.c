@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.44 2002-09-17 22:14:39 megastep Exp $ */
+/* $Id: setupdb.c,v 1.45 2002-10-19 07:01:49 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -20,6 +20,9 @@
 
 #ifdef HAVE_SYS_MKDEV_H
 #include <sys/mkdev.h>
+#endif
+#ifdef HAVE_SYS_SYSMACROS_H
+#include <sys/sysmacros.h>
 #endif
 
 #include "setupdb.h"
@@ -52,6 +55,7 @@ struct _loki_product_option_t
     xmlNodePtr node;
     product_component_t *component;
     char *name;
+	char *tag;
     product_option_t *next;    
     product_file_t *files;
 };
@@ -411,6 +415,8 @@ product_t *loki_openproduct(const char *name)
                     opt->node = optnode;
                     opt->component = comp;
                     opt->name = strdup(xmlGetProp(optnode, "name"));
+					str = xmlGetProp(node, "tag");
+					opt->tag = str ? strdup(str) : NULL;
                     opt->files = NULL;
                     opt->next = comp->options;
                     comp->options = opt;
@@ -634,6 +640,8 @@ int loki_closeproduct(product_t *product)
             }
 
             free(opt->name);
+			if ( opt->tag )
+				free(opt->tag);
             free(opt);
             opt = nextopt;
         }
@@ -881,6 +889,8 @@ void loki_remove_component(product_component_t *comp)
         }
         
         free(opt->name);
+		if ( opt->tag )
+			free(opt->tag);
         free(opt);
         opt = nextopt;
     }
@@ -969,6 +979,11 @@ const char *loki_getname_option(product_option_t *opt)
     return opt->name;
 }
 
+const char *loki_gettag_option(product_option_t *opt)
+{
+    return opt->tag;
+}
+
 size_t loki_getsize_option(product_option_t *opt)
 {
     size_t size = 0;
@@ -985,7 +1000,7 @@ size_t loki_getsize_option(product_option_t *opt)
     return size;
 }
 
-product_option_t *loki_create_option(product_component_t *component, const char *name)
+product_option_t *loki_create_option(product_component_t *component, const char *name, const char *tag)
 {
     xmlNodePtr node = xmlNewChild(component->node, NULL, "option", NULL);
     if ( node ) {
@@ -993,11 +1008,15 @@ product_option_t *loki_create_option(product_component_t *component, const char 
         ret->node = node;
         ret->component = component;
         ret->name = strdup(name);
+		ret->tag = tag ? strdup(tag) : NULL;
         ret->next = component->options;
         ret->files = NULL;
         component->options = ret;
         component->product->changed = 1;
         xmlSetProp(node, "name", name);
+		if ( tag ) {
+			xmlSetProp(node, "tag", tag);
+		}
         return ret;
     }
     return NULL;
@@ -1012,7 +1031,9 @@ void loki_remove_option(product_option_t *opt)
     xmlUnlinkNode(opt->node);
     xmlFreeNode(opt->node);
     free(opt->name);
-        
+	if ( opt->tag )
+		free(opt->tag);
+
     file = opt->files;
     while ( file ) {
         nextfile = file->next;
@@ -1783,12 +1804,15 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
         snprintf(cmd, sizeof(cmd), "%s --version", binpath);
         pipe = popen(cmd, "r");
         if ( pipe ) {
-            int major, minor, rel;
+            int major, minor, rel, ret;
             const char *tmpbin;
 
             /* Try to see if we have to update it */
-            fscanf(pipe, "%d.%d.%d", &major, &minor, &rel);
+            ret = fscanf(pipe, "%d.%d.%d", &major, &minor, &rel);
             pclose(pipe);
+
+            if ( ret==EOF || ret<3 )
+                perform_upgrade = 1;
 
             /* Now check against the version of the binaries we have */
             tmpbin = copy_binary_to_tmp(src_bins);
@@ -1906,34 +1930,40 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
                 "        case `uname -m` in\n"
                 "           i?86)  echo \"x86\"\n"
                 "                  status=0;;\n"
-				"           90*/*)\n"
-				"		   echo \"hppa\"\n"
-				"		   status=0;;\n"
-				"	    *)\n"
-				"		case `uname -s` in\n"
-				"		    IRIX*)\n"
-				"			echo \"mips\"\n"
-				"			status=0;;\n"
-				"		    *)\n"
-				"			echo \"`uname -m`\"\n"
-				"			status=0;;\n"
-				"		esac\n"
-				"        esac\n"
+		"           90*/*)\n"
+		"		   echo \"hppa\"\n"
+		"		   status=0;;\n"
+		"	    *)\n"
+		"		case `uname -s` in\n"
+		"		    IRIX*)\n"
+		"			echo \"mips\"\n"
+		"			status=0;;\n"
+		"		    *)\n"
+		"			arch=`uname -p 2>/dev/null || uname -m`\n"
+		"                       if test \"$arch\" = powerpc; then\n"
+		"                          echo \"ppc\"\n"
+		"                       else\n"
+		"                          echo $arch\n"
+		"                       fi\n"
+		"			status=0;;\n"
+		"		esac\n"
+		"        esac\n"
                 "        return $status\n"
                 "}\n\n"
 
-				"DetectOS()\n"
-				"{\n"
-				"  os=`uname -s`\n"
-				"  if test \"$os\" = OpenUNIX; then\n"
-				"     echo SCO_SV\n"
-				"  else\n"
-				"     echo $os\n"
-				"  fi\n"
-				"  return 0\n"
-				"}\n\n"
+		"DetectOS()\n"
+		"{\n"
+		"  os=`uname -s`\n"
+		"  if test \"$os\" = OpenUNIX; then\n"
+		"     echo SCO_SV\n"
+		"  else\n"
+		"     echo $os\n"
+		"  fi\n"
+		"  return 0\n"
+		"}\n\n"
 
-                "if type " LOKI_PREFIX "-uninstall > /dev/null 2>&1; then\n"
+                "if type " LOKI_PREFIX "-uninstall 2>&1 > /dev/null || which "
+		LOKI_PREFIX "-uninstall 2>&1 > /dev/null; then\n"
                 "    UNINSTALL=" LOKI_PREFIX "-uninstall\n"
                 "else\n"
                 "    UNINSTALL=\"$HOME/" LOKI_DIRNAME "/installed/bin/`DetectOS`/`DetectARCH`/uninstall\"\n"

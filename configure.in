@@ -24,6 +24,7 @@ AC_PROG_MAKE_SET
 AC_CHECK_HEADERS(unistd.h)
 AC_CHECK_HEADERS(strings.h)
 AC_CHECK_HEADERS(sys/utsname.h)
+AC_CHECK_HEADERS(sys/sysmacros.h)
 AC_CHECK_HEADERS(sys/mkdev.h)
 AC_CHECK_HEADERS(glob.h)
 AC_CHECK_HEADERS(elf.h)
@@ -41,7 +42,11 @@ case "$target" in
     *sgi*)
 	ARCH=mips ;;
     *)
-        ARCH=`uname -m` ;;
+        ARCH=`uname -p 2> /dev/null || uname -m`
+	if test "$ARCH" = powerpc; then
+		ARCH=ppc
+	fi
+	;;
 esac
 
 dnl Add architecture-specific compile flags

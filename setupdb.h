@@ -7,7 +7,7 @@
 #include <limits.h>
 
 #ifndef LOKI_PREFIX
-#define LOKI_PREFIX "loki"
+#define LOKI_PREFIX "codehost"
 #endif
 
 /* This is the user's directory where everything is stored */
@@ -143,9 +143,10 @@ product_option_t *loki_getnext_option(product_option_t *option);
 product_option_t *loki_find_option(product_component_t *comp, const char *name);
 
 const char *loki_getname_option(product_option_t *opt);
+const char *loki_gettag_option(product_option_t *opt);
 size_t loki_getsize_option(product_option_t *opt);
 
-product_option_t *loki_create_option(product_component_t *comp, const char *name);
+product_option_t *loki_create_option(product_component_t *comp, const char *name, const char *tag);
 
 void loki_remove_option(product_option_t *opt);
 
