@@ -136,9 +136,9 @@ else
 fi
 
 AC_ARG_WITH(vendor,
-[  --with-vendor           with specified vendor prefix  [default=codehost]], 
-	,   with_vendor=codehost)
-if test x$with_vendor != xcodehost; then
+[  --with-vendor           with specified vendor prefix  [default=loki]], 
+	,   with_vendor=loki)
+if test x$with_vendor != xloki; then
         CFLAGS="$CFLAGS -DLOKI_PREFIX=\\\"$with_vendor\\\""
 fi
 
