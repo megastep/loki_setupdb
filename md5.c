@@ -409,7 +409,7 @@ static int ftw_func(const char *file, const struct stat *st, int flag)
     if ( flag == FTW_F ) {
         char sum[33] = "";
         md5_compute(file, sum, unpack);
-        printf("%s\t%s\n", sum, file);
+        printf("%s  %s\n", sum, file);
     }
     return 0;
 }
