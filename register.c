@@ -1,6 +1,6 @@
 /* Command-line utility to manipulate product entries from scripts */
 
-/* $Id: register.c,v 1.10 2003-03-07 04:04:52 megastep Exp $ */
+/* $Id: register.c,v 1.11 2003-06-06 20:47:11 megastep Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -21,6 +21,7 @@ void print_usage(const char *argv0)
 		   "   script component type name path-to-script\n"
 		   "                 Register a new pre/post-install script for the component.\n"
            "   update component option files Updates registration information\n"
+		   "   message component \"message\"   Add an uninstallation warning message to the component\n"
            "   remove files                  Remove specified files from the product\n"
 		   "   printtags [component]          Print installed option tags\n",
            argv0);
@@ -84,6 +85,19 @@ int printtags(const char *component)
 	return 0;
 }
 
+int add_message(const char *component, const char *msg)
+{
+    product_component_t *comp;
+	if ( component ) {
+		comp = loki_find_component(product, component);
+		if ( ! comp ) {
+			fprintf(stderr,"Unable to find component %s !\n", component);
+			return 1;
+		}
+		loki_setmessage_component(comp, msg);
+	}
+	return 0;
+}
 
 int register_script(const char *component, script_type_t type, const char *name, const char *script)
 {
@@ -162,6 +176,12 @@ int main(int argc, char **argv)
             print_usage(argv[0]);
         } else {
             ret = remove_files(&argv[3]);
+        }
+    } else if ( !strcmp(argv[2], "message") ) {
+        if ( argc != 5 ) {
+            print_usage(argv[0]);
+        } else {
+            ret = add_message(argv[3], argv[4]);
         }
     } else if ( !strcmp(argv[2], "create") ) {
         if ( argc < 5 ) {
