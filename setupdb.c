@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.69 2005-02-05 01:52:20 megastep Exp $ */
+/* $Id: setupdb.c,v 1.70 2005-02-05 02:05:34 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -1533,6 +1533,19 @@ int loki_setdesktop_file(product_file_t *file, const char *binary)
 		xmlSetProp(file->node, "desktop", binary);
 		file->option->component->product->changed = 1;
 		return 1;
+	}
+	return 0;
+}
+
+/* Test whether a file is a desktop item, optionally if it matches a binary */
+int loki_isdesktop_file(product_file_t *file, const char *binary)
+{
+	if ( file ) {
+		if ( binary ) {
+			return file->desktop && !strcmp(file->desktop, binary);
+		} else {
+			return file->desktop != NULL;
+		}
 	}
 	return 0;
 }

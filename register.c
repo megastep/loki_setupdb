@@ -1,6 +1,6 @@
 /* Command-line utility to manipulate product entries from scripts */
 
-/* $Id: register.c,v 1.13 2004-05-15 00:48:16 chunky Exp $ */
+/* $Id: register.c,v 1.14 2005-02-05 02:05:34 megastep Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -29,6 +29,8 @@ void print_usage(const char *argv0)
 			"      Remove specified files from the product\n"
 			"   listfiles [component]\n"
 			"      List files installed under product [or component]\n"
+		    "   desktop <component> <binary>\n"
+		    "      List all desktop items installed for a binary\n"
 			"   printtags [component]\n"
 			"      Print installed option tags\n",
            argv0);
@@ -159,7 +161,8 @@ int remove_files(char **files)
     return 0;
 }
 
-int list_files(const char *component) {
+int list_files(const char *component)
+{
 	product_component_t *comp;
 	product_file_t *file;
 	product_option_t *option;
@@ -208,6 +211,32 @@ int list_files(const char *component) {
 		printf("\n");
 	}
 	printf("\n");
+	return 0;
+}
+
+int list_desktop(const char *component, const char *binary)
+{
+	product_component_t *comp;
+	product_file_t *file;
+	product_option_t *option;
+
+	comp = loki_find_component(product, component);
+	if(comp == NULL) {
+		fprintf(stderr,"Unable to find component %s !\n", component);
+		return 1;
+	}
+
+	for ( option = loki_getfirst_option(comp); option;
+			option = loki_getnext_option(option) ) {
+		for( file = loki_getfirst_file(option); file;
+			file = loki_getnext_file(file) ) {
+
+			if( loki_isdesktop_file(file, binary) ) {
+				puts(loki_getpath_file(file));
+			}
+		}
+	}
+
 	return 0;
 }
 
@@ -262,6 +291,12 @@ int main(int argc, char **argv)
 		}
     } else if ( !strcmp(argv[2], "listfiles") ) {
 		ret = list_files(argc>3 ? argv[3] : NULL);
+    } else if ( !strcmp(argv[2], "desktop") ) {
+        if ( argc != 5 ) {
+            print_usage(argv[0]);
+        } else {
+			ret = list_desktop(argv[3], argv[4] );
+		}
 	} else if ( !strcmp(argv[2], "printtags") ) {
 		ret = printtags(argv[3]);
     } else {

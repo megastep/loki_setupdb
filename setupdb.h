@@ -218,6 +218,8 @@ int loki_updatemd5_file(product_t *product, const char *path);
 
 /* Indicate that a file is a desktop item for a binary */
 int loki_setdesktop_file(product_file_t *file, const char *binary);
+/* Test whether a file is a desktop item, optionally if it matches a binary */
+int loki_isdesktop_file(product_file_t *file, const char *binary);
 
 /* Register a new RPM as having been installed by this product */
 int loki_register_rpm(product_option_t *option, const char *name, const char *version, int revision,
