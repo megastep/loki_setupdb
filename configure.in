@@ -101,6 +101,8 @@ powerpc-apple-darwin*)
         ARCH=ppc ;;
 *i?86*)
         ARCH=x86 ;;
+*x86_64*)
+	ARCH=amd64 ;;
 *)
         ARCH=`uname -p 2> /dev/null || uname -m`
 	if test "$ARCH" = powerpc; then
