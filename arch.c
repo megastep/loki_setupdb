@@ -1,4 +1,4 @@
-/* $Id: arch.c,v 1.9 2003-02-27 06:15:10 megastep Exp $ */
+/* $Id: arch.c,v 1.10 2003-03-05 02:52:46 megastep Exp $ */
 
 #include <stdlib.h>
 #include <stdio.h>

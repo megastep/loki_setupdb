@@ -61,6 +61,7 @@ case "$target" in
     hppa*)
 	CFLAGS="$CFLAGS -I/opt/zlib/include"
 	EXTRA_LIBS="-ldld"
+	STATIC="-Wl,-E"
 	BSTATIC=""
 	BDYNAMIC="-Wl,-a,archive_shared"
 	ARCH=hppa ;;

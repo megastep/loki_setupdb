@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.48 2003-03-01 02:30:21 megastep Exp $ */
+/* $Id: setupdb.c,v 1.49 2003-03-05 02:52:46 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>

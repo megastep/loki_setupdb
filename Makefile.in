@@ -1,6 +1,6 @@
 #
 # Makefile for the Loki registry library
-# $Id: Makefile.in,v 1.16 2003-03-03 23:12:54 megastep Exp $
+# $Id: Makefile.in,v 1.17 2003-03-05 02:52:46 megastep Exp $
 #
 
 CC		:= @CC@
@@ -53,10 +53,10 @@ md5sum: md5.c
 
 register: register.c $(TARGET)
 	$(CC) $(CFLAGS) -o $@ register.c $(TARGET) $(LIBS) @STATIC@
-	strip $@
-	@BRANDELF@ -t $(OS) $@
 
 install-register: register
+	strip register
+	@BRANDELF@ -t $(OS) register
 	cp register $(IMAGE)/bin/$(OS)/$(ARCH)/
 
 clean:
