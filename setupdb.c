@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.55 2003-07-02 22:49:07 megastep Exp $ */
+/* $Id: setupdb.c,v 1.56 2003-10-15 00:08:24 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -824,7 +824,7 @@ const char *loki_getmessage_component(product_component_t *comp)
 
 	/* Look for a <message> tag */
 	for ( node = comp->node->childs; node; node = node->next ) {
-		if ( !strcmp(node->name, "message") ) {
+		if ( node->name && !strcmp(node->name, "message") ) {
 			return get_xml_string(comp->product, node);
 		}
 	}
@@ -838,7 +838,7 @@ void loki_setmessage_component(product_component_t *comp, const char *msg)
 	comp->product->changed = 1;
 	/* Look for a <message> tag */
 	for ( node = comp->node->childs; node; node = node->next ) {
-		if ( !strcmp(node->name, "message") ) {
+		if ( node->name && !strcmp(node->name, "message") ) {
 			/* Remove the existing node */
 			xmlUnlinkNode(node);
 			xmlFreeNode(node);
