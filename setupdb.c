@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.16 2000-10-17 09:13:22 megastep Exp $ */
+/* $Id: setupdb.c,v 1.17 2000-10-17 09:36:23 megastep Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -787,9 +787,9 @@ static product_file_t *registerfile_new(product_option_t *option, const char *pa
 
         file->type = LOKI_FILE_SYMLINK;
         file->node = xmlNewChild(option->node, NULL, "symlink", path);
-        count = readlink(path, buf, sizeof(buf));
+        count = readlink(full, buf, sizeof(buf));
         if ( count < 0 ) {
-            perror("readlink");
+            fprintf(stderr, "readlink: Could not find symbolic link %s\n", full);
         } else {
             buf[count] = '\0';
             xmlSetProp(file->node, "dest", buf);
