@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.21 2000-10-18 20:16:39 megastep Exp $ */
+/* $Id: setupdb.c,v 1.22 2000-10-24 20:07:37 hercules Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -1009,17 +1009,35 @@ static product_file_t *registerfile_update(product_option_t *option, product_fil
         option->component->product->changed = 1;
         break;
     case LOKI_FILE_SYMLINK:
-        count = readlink(file->path, buf, sizeof(buf));
-        if ( count < 0 ) {
-            perror("readlink");
+        if ( *file->path == '/' ) {
+            count = readlink(file->path, buf, sizeof(buf));
+            if ( count < 0 ) {
+                fprintf(stderr, "Couldn't read link: %s\n", file->path);
+            }
         } else {
+            char path[PATH_MAX];
+            snprintf(path, sizeof(path), "%s/%s", option->component->product->info.root, file->path);
+            count = readlink(path, buf, sizeof(buf));
+            if ( count < 0 ) {
+                fprintf(stderr, "Couldn't read link: %s\n", path);
+            }
+        }
+        if ( count >= 0 ) {
             buf[count] = '\0';
             xmlSetProp(file->node, "dest", buf);
         }   
         option->component->product->changed = 1;
         break;
-    default:        
-        /* TODO: Do we need to update any other element type ? */
+
+    case LOKI_FILE_DIRECTORY:
+    case LOKI_FILE_DEVICE:
+    case LOKI_FILE_SOCKET:
+    case LOKI_FILE_FIFO:
+    case LOKI_FILE_RPM:
+    case LOKI_FILE_SCRIPT:
+    case LOKI_FILE_NONE:
+        /* We don't need to update the MD5 checksums of these elements */
+        break;
     }
     return file;
 }
