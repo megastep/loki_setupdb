@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.60 2004-04-29 18:39:54 megastep Exp $ */
+/* $Id: setupdb.c,v 1.61 2004-04-30 00:08:25 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -327,7 +327,7 @@ product_t *loki_openproduct(const char *name)
 {
     char buf[PATH_MAX];
     int major, minor;
-    const char *str;
+    char *str;
     xmlDocPtr doc = NULL;
     xmlNodePtr node;
     product_t *prod;
@@ -365,22 +365,27 @@ product_t *loki_openproduct(const char *name)
 
     str = xmlGetProp(doc->root, "name");
     strncpy(prod->info.name, str, sizeof(prod->info.name));
+	xmlFree(str);
     str = xmlGetProp(doc->root, "desc");
     if ( str ) {
         strncpy(prod->info.description, str, sizeof(prod->info.description));
+		xmlFree(str);
     } else {
         *prod->info.description = '\0';
     }
     str = xmlGetProp(doc->root, "root");
     strncpy(prod->info.root, str, sizeof(prod->info.root));
+	xmlFree(str);
     str = xmlGetProp(doc->root, "prefix");
 	if ( str ) {
 		strncpy(prod->info.prefix, str, sizeof(prod->info.prefix));
+		xmlFree(str);
 	} else {
 		strcpy(prod->info.prefix, ".");
 	}
     str = xmlGetProp(doc->root, "update_url");
     strncpy(prod->info.url, str, sizeof(prod->info.url));
+	xmlFree(str);
     if ( *name == '/' ) { /* Absolute path to a manifest.ini file */
         strncpy(prod->info.registry_path, name,
                 sizeof(prod->info.registry_path));
@@ -397,6 +402,7 @@ product_t *loki_openproduct(const char *name)
         fprintf(stderr, "Warning: This XML file was generated with a later version of setupdb (%d.%d).\n"
                 "Problems may occur.\n", major, minor);
     }
+	xmlFree(str);
 
     prod->components = prod->default_comp = NULL;
 	prod->envvars = NULL;
@@ -411,12 +417,12 @@ product_t *loki_openproduct(const char *name)
 
             comp->node = node;
             comp->product = prod;
-            comp->name = strdup(xmlGetProp(node, "name"));
-            comp->version = strdup(xmlGetProp(node, "version"));
-            str = xmlGetProp(node, "update_url");
-            comp->url = str ? strdup(str) : NULL;
+            comp->name = xmlGetProp(node, "name");
+            comp->version = xmlGetProp(node, "version");
+            comp->url = xmlGetProp(node, "update_url");
             str = xmlGetProp(node, "default");
             comp->is_default = (str && *str=='y');
+			xmlFree(str);
             if ( comp->is_default ) {
                 prod->default_comp = comp;
             }
@@ -433,9 +439,8 @@ product_t *loki_openproduct(const char *name)
 
                     opt->node = optnode;
                     opt->component = comp;
-                    opt->name = strdup(xmlGetProp(optnode, "name"));
-					str = xmlGetProp(optnode, "tag");
-					opt->tag = str ? strdup(str) : NULL;
+                    opt->name = xmlGetProp(optnode, "name");
+					opt->tag = xmlGetProp(optnode, "tag");
                     opt->files = NULL;
                     opt->next = comp->options;
                     comp->options = opt;
@@ -443,13 +448,16 @@ product_t *loki_openproduct(const char *name)
                     for( filenode = optnode->childs; filenode; filenode = filenode->next ) {
                         file_type_t t;
                         product_file_t *file = (product_file_t *) malloc(sizeof(product_file_t));
+						const char *cstr;
 
                         memset(file->data.md5sum, 0, 16);
                         if ( !strcmp(filenode->name, "file") ) {
-                            const char *md5 = xmlGetProp(filenode, "md5");
+                            char *md5 = xmlGetProp(filenode, "md5");
                             t = LOKI_FILE_REGULAR;
-                            if ( md5 ) 
+                            if ( md5 ) {
                                 memcpy(file->data.md5sum, get_md5_bin(md5), 16);
+								xmlFree(md5);
+							}
                         } else if ( !strcmp(filenode->name, "directory") ) {
                             t = LOKI_FILE_DIRECTORY;
                         } else if ( !strcmp(filenode->name, "symlink") ) {
@@ -469,6 +477,7 @@ product_t *loki_openproduct(const char *name)
                                 } else if ( !strcmp(str, script_types[LOKI_SCRIPT_POSTUNINSTALL]) ) {
                                     file->data.scr_type = LOKI_SCRIPT_POSTUNINSTALL;
                                 }
+								xmlFree(str);
                             }
                         } else {
                             t = LOKI_FILE_NONE;
@@ -482,20 +491,23 @@ product_t *loki_openproduct(const char *name)
                         } else {
                             file->patched = 0;
                         }
+						xmlFree(str);
                         str = xmlGetProp(filenode, "mutable");
                         if ( str && *str=='y' ) {
                             file->mutable = 1;
                         } else {
                             file->mutable = 0;
                         }
+						xmlFree(str);
                         str = xmlGetProp(filenode, "mode");
                         if ( str ) {
                             sscanf(str,"%o", &file->mode);
                         } else {
                             file->mode = 0644;
                         }
-                        str = get_xml_string(prod, filenode);
-                        file->path = strdup(str); /* The expansion is done in loki_getname_file() */
+						xmlFree(str);
+                        cstr = get_xml_string(prod, filenode);
+                        file->path = strdup(cstr); /* The expansion is done in loki_getname_file() */
 
                         insert_end_file(file, &opt->files);
                     }
@@ -511,6 +523,7 @@ product_t *loki_openproduct(const char *name)
                         } else if ( !strcmp(str, script_types[LOKI_SCRIPT_POSTUNINSTALL]) ) {
                             file->data.scr_type = LOKI_SCRIPT_POSTUNINSTALL;
                         }
+						xmlFree(str);
                     }
                     file->path = strdup(get_xml_string(prod, optnode));
                     file->next = comp->scripts;                    
@@ -519,8 +532,8 @@ product_t *loki_openproduct(const char *name)
 					product_envvar_t *var = malloc(sizeof(product_envvar_t));
 					
 					var->node = node;
-					var->name = strdup(xmlGetProp(node, "var"));
-					var->value = strdup(xmlGetProp(node, "value"));
+					var->name = xmlGetProp(node, "var");
+					var->value = xmlGetProp(node, "value");
 					var->next = comp->envvars;
 					comp->envvars = var;
 				}
@@ -529,8 +542,8 @@ product_t *loki_openproduct(const char *name)
 			product_envvar_t *var = malloc(sizeof(product_envvar_t));
 
 			var->node = node;
-			var->name = strdup(xmlGetProp(node, "var"));
-			var->value = strdup(xmlGetProp(node, "value"));
+			var->name = xmlGetProp(node, "var");
+			var->value = xmlGetProp(node, "value");
 			var->next = prod->envvars;
 			prod->envvars = var;
 		}
@@ -1470,8 +1483,9 @@ file_check_t loki_check_file(product_file_t *file)
 {
 	char path[PATH_MAX];
 	char md5sum[33];
-	const char *str;
+	char *str;
 	struct stat st;
+	file_check_t ret = LOKI_OK;
 
 	expand_path(file->option->component->product, file->path, path, sizeof(path));
 
@@ -1485,8 +1499,10 @@ file_check_t loki_check_file(product_file_t *file)
 		/* Compare MD5 checksums if file exists */
 		md5_compute(path, md5sum, 1);
 		str = xmlGetProp(file->node, "md5");
-		if ( str && strncmp(md5sum, str, CHECKSUM_SIZE) ) 
-			return LOKI_CHANGED;
+		if ( str && strncmp(md5sum, str, CHECKSUM_SIZE) ) {
+			ret = LOKI_CHANGED;
+		}
+		xmlFree(str);
 		break;
     case LOKI_FILE_SYMLINK:
 		if ( lstat(path, &st) < 0 )
@@ -1501,12 +1517,14 @@ file_check_t loki_check_file(product_file_t *file)
 
 			count = readlink(path, buf, sizeof(buf));
 			if ( count < 0 ) {
+				xmlFree(str);
 				return LOKI_CHANGED;
 			} else {
 				buf[count] = '\0';
 			}
 			if ( strcmp(buf, str) )
-				return LOKI_CHANGED;
+				ret = LOKI_CHANGED;
+			xmlFree(str);
 		}
 		break;
     case LOKI_FILE_DEVICE:
@@ -1515,17 +1533,23 @@ file_check_t loki_check_file(product_file_t *file)
 		/* Check that device has the same characteristics */
 		str = xmlGetProp(file->node, "type");
 		if ( str ) {
-			if ( !strcmp(str, "block") && !S_ISBLK(st.st_mode) )
-				return LOKI_CHANGED;
-			if ( !strcmp(str, "char") && !S_ISCHR(st.st_mode) )
-				return LOKI_CHANGED;
-
-			str = xmlGetProp(file->node, "major");
-			if ( str && major(st.st_rdev)!=atoi(str) )
-				return LOKI_CHANGED;
-			str = xmlGetProp(file->node, "minor");
-			if ( str && minor(st.st_rdev)!=atoi(str) )
-				return LOKI_CHANGED;
+			if ( !strcmp(str, "block") && !S_ISBLK(st.st_mode) ) {
+				ret =  LOKI_CHANGED;
+			} else if ( !strcmp(str, "char") && !S_ISCHR(st.st_mode) ) {
+				ret = LOKI_CHANGED;
+			} else {
+				xmlFree(str);
+				str = xmlGetProp(file->node, "major");
+				if ( str && major(st.st_rdev)!=atoi(str) ) {
+					ret = LOKI_CHANGED;
+				} else {
+					xmlFree(str);
+					str = xmlGetProp(file->node, "minor");
+					if ( str && minor(st.st_rdev)!=atoi(str) )
+						ret = LOKI_CHANGED;
+				}
+			}
+			xmlFree(str);
 		}
 		break;
     case LOKI_FILE_DIRECTORY:
@@ -1541,7 +1565,7 @@ file_check_t loki_check_file(product_file_t *file)
 		/* Do nothing */
 		break;
 	}
-	return LOKI_OK;
+	return ret;
 }
 
 static void unregister_file(product_file_t *file, product_file_t **opt)
