@@ -78,7 +78,7 @@ int loki_removeproduct(product_t *product);
 
 product_info_t *loki_getproductinfo(product_t *product);
 
-/* Enumerate the installed versions */
+/* Enumerate the installed components */
 
 product_component_t *loki_getfirst_component(product_t *product);
 product_component_t *loki_getnext_component(product_component_t *comp);
