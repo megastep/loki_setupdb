@@ -1,6 +1,6 @@
 #
 # Makefile for the Loki registry library
-# $Id: Makefile.in,v 1.15 2003-03-01 03:01:36 megastep Exp $
+# $Id: Makefile.in,v 1.16 2003-03-03 23:12:54 megastep Exp $
 #
 
 CC		:= @CC@
@@ -36,28 +36,28 @@ $(TARGET): $(ARCH) $(OBJS)
 	ar rcs $@ $(OBJS)
 
 convert: $(ARCH) $(ARCH)/convert.o $(TARGET)
-	$(CC) -g -o $@ $(ARCH)/convert.o $(TARGET) $(LIBS) -static
+	$(CC) -g -o $@ $(ARCH)/convert.o $(TARGET) $(LIBS) @STATIC@
 	strip $@
 	@BRANDELF@ -t $(OS) $@
 
 install-convert: convert
-	@cp -v convert $(IMAGE)/bin/$(OS)/$(ARCH)/
+	cp convert $(IMAGE)/bin/$(OS)/$(ARCH)/
 
 brandelf: $(ARCH) $(ARCH)/brandelf.o
 	$(CC) -o $@ $(ARCH)/brandelf.o
 
 md5sum: md5.c
-	$(CC) $(CFLAGS) -o $@ md5.c -DMD5SUM_PROGRAM -lz -static
+	$(CC) $(CFLAGS) -o $@ md5.c -DMD5SUM_PROGRAM -lz @STATIC@
 	strip $@
 	@BRANDELF@ -t $(OS) $@
 
 register: register.c $(TARGET)
-	$(CC) $(CFLAGS) -o $@ register.c $(TARGET) $(LIBS) -static
+	$(CC) $(CFLAGS) -o $@ register.c $(TARGET) $(LIBS) @STATIC@
 	strip $@
 	@BRANDELF@ -t $(OS) $@
 
 install-register: register
-	@cp -v register $(IMAGE)/bin/$(OS)/$(ARCH)/
+	cp register $(IMAGE)/bin/$(OS)/$(ARCH)/
 
 clean:
 	rm -f $(ARCH)/*.o *~
