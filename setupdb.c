@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.47 2003-02-27 06:15:10 megastep Exp $ */
+/* $Id: setupdb.c,v 1.48 2003-03-01 02:30:21 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -429,7 +429,7 @@ product_t *loki_openproduct(const char *name)
                     opt->node = optnode;
                     opt->component = comp;
                     opt->name = strdup(xmlGetProp(optnode, "name"));
-					str = xmlGetProp(node, "tag");
+					str = xmlGetProp(optnode, "tag");
 					opt->tag = str ? strdup(str) : NULL;
                     opt->files = NULL;
                     opt->next = comp->options;

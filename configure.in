@@ -92,4 +92,11 @@ if test x$with_vendor != xcodehost; then
         CFLAGS="$CFLAGS -DLOKI_PREFIX=\\\"$with_vendor\\\""
 fi
 
+AC_ARG_WITH(image,
+[  --with-image            specifiy the image path  [default=../../spp/private/clpack]], 
+	,   with_image=../../spp/private/clpack)
+IMAGE="$with_image"
+
+
+AC_SUBST(IMAGE)
 AC_OUTPUT(Makefile)

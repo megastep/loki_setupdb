@@ -1,6 +1,6 @@
 /* Command-line utility to manipulate product entries from scripts */
 
-/* $Id: register.c,v 1.7 2003-02-27 06:15:10 megastep Exp $ */
+/* $Id: register.c,v 1.8 2003-03-01 02:30:21 megastep Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,7 +19,8 @@ void print_usage(const char *argv0)
 		   "      Create a new component and/or option in the component\n"
            "   add component option files    Register files in the component / option\n"
            "   update component option files Updates registration information\n"
-           "   remove files                  Remove specified files from the product\n",
+           "   remove files                  Remove specified files from the product\n"
+		   "   printtags [component]          Print installed option tags\n",
            argv0);
 }
 
@@ -44,6 +45,37 @@ int create_option(const char *component, const char *ver, const char *option_nam
 			if ( ! opt ) {
 				fprintf(stderr, "Failed to create option '%s' in component '%s'\n", option_name, component);
 				return 0;
+			}
+		}
+	}
+	return 1;
+}
+
+int printtags(const char *component)
+{
+    product_component_t *comp;
+    product_option_t *opt;
+	const char *tag;
+
+	if ( component ) {
+		comp = loki_find_component(product, component);
+		if ( ! comp ) {
+			fprintf(stderr,"Unable to find component %s !\n", component);
+			return 0;
+		}
+		for ( opt = loki_getfirst_option(comp); opt; opt = loki_getnext_option(opt) ) {
+			tag = loki_gettag_option(opt);
+			if ( tag ) {
+				printf("%s ", tag);
+			}
+		}
+	} else { /* Do all components */
+		for ( comp = loki_getfirst_component(product); comp; comp = loki_getnext_component(comp) ) {
+			for ( opt = loki_getfirst_option(comp); opt; opt = loki_getnext_option(opt) ) {
+				tag = loki_gettag_option(opt);
+				if ( tag ) {
+					printf("%s ", tag);
+				}
 			}
 		}
 	}
@@ -116,6 +148,8 @@ int main(int argc, char **argv)
         } else {
 			create_option(argv[3], argv[4], argc>5 ? argv[5] : NULL, argc>6 ? argv[6] : NULL);
 		}
+    } else if ( !strcmp(argv[2], "printtags") ) {
+		printtags(argv[3]);
     } else {
         print_usage(argv[0]);
     }
