@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.70 2005-02-05 02:05:34 megastep Exp $ */
+/* $Id: setupdb.c,v 1.71 2005-02-09 23:53:26 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -519,7 +519,9 @@ product_t *loki_openproduct(const char *name)
                         if ( str ) {
 							file->desktop = strdup(str);
 							xmlFree(str);
-                        }
+                        } else {
+							file->desktop = NULL;
+						}
                         str = xmlGetProp(filenode, "mode");
                         if ( str ) {
                             sscanf(str,"%o", &file->mode);
@@ -536,6 +538,7 @@ product_t *loki_openproduct(const char *name)
                     product_file_t *file = (product_file_t *) malloc(sizeof(product_file_t));
                     file->node = optnode;
                     file->type = LOKI_FILE_SCRIPT;
+					file->desktop = NULL;
 
                     str = xmlGetProp(optnode, "type");
                     if ( str ) {
@@ -1358,6 +1361,7 @@ static product_file_t *registerfile_new(product_option_t *option, const char *pa
     }
     file = (product_file_t *)malloc(sizeof(product_file_t));
     file->path = strdup(path);
+	file->desktop = NULL;
     memset(file->data.md5sum, 0, 16);
     if ( S_ISREG(st.st_mode) ) {
         file->type = LOKI_FILE_REGULAR;
@@ -1703,7 +1707,7 @@ int loki_register_rpm(product_option_t *option, const char *name, const char *ve
     rpm->option = option;
     rpm->path = strdup(name);
     rpm->type = LOKI_FILE_RPM;
-
+	rpm->desktop = NULL;
     rpm->next = option->files;
     option->files = rpm;
     option->component->product->changed = 1;
@@ -1744,6 +1748,7 @@ static product_file_t *registerscript(xmlNodePtr parent, script_type_t type, con
         scr->path = strdup(name);
         scr->type = LOKI_FILE_SCRIPT;
         scr->data.scr_type = type;
+		scr->desktop = NULL;
         return scr;
     }
     return NULL;
