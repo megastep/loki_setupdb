@@ -12,7 +12,9 @@ PACKAGE_TARNAME="setupdb"
 PACKAGE_VERSION="$SETUPDB_VERSION_MAJOR.$SETUPDB_VERSION_MINOR.$SETUPDB_VERSION_RELEASE"
 PACKAGE_STRING="$PACKAGE_NAME v$PACKAGE_VERSION"
 
-CFLAGS="-fsigned-char -Wall -g -O2 -I. -D_REENTRANT"
+CFLAGS="-fsigned-char -Wall -g -O2 -I."
+REENTRANT="-D_REENTRANT"
+
 if test -d /usr/codehost/lib; then
 	LIBS="-L/usr/codehost/lib"
 elif test -d /opt/codehost/lib; then
@@ -78,6 +80,7 @@ case "$target" in
 	CFLAGS="-Ddarwin"
 	BSTATIC=""
 	BDYNAMIC=""
+	REENTRANT=""
 	ARCH=ppc ;;
     *aix* )
 	BSTATIC=""
@@ -110,6 +113,7 @@ case "$target" in
         ;;
 esac
 
+CFLAGS="$CFLAGS $REENTRANT"
 
 AC_SUBST(ARCH)
 AC_SUBST(STATIC)
