@@ -20,12 +20,23 @@ AC_CHECK_HEADERS(sys/utsname.h)
 AC_CHECK_HEADERS(glob.h)
 AC_CHECK_HEADERS(elf.h)
 
+dnl Set the architecture flag
 case "$target" in
     *i?86*)
         ARCH=x86 ;;
     *)
         ARCH=`uname -m` ;;
 esac
+
+dnl Add architecture-specific compile flags
+case "$target" in
+    alpha*-*-linux*)
+        if test x$ac_cv_prog_gcc = xyes; then
+            CFLAGS="$CFLAGS -mcpu=ev4 -Wa,-mall"
+        fi
+        ;;
+esac
+
 
 AC_SUBST(ARCH)
 AC_SUBST(SETUPDB_VERSION_MAJOR)
