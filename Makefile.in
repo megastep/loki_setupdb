@@ -1,6 +1,6 @@
 #
 # Makefile for the Loki registry library
-# $Id: Makefile.in,v 1.4 2001-01-17 02:09:27 hercules Exp $
+# $Id: Makefile.in,v 1.5 2001-01-17 02:18:13 hercules Exp $
 #
 
 CC		:= @CC@
@@ -56,10 +56,12 @@ register: register.c $(TARGET)
 clean:
 	rm -f $(ARCH)/*.o *~
 
-distclean: clean
-	rm -rf alpha ppc sparc64 x86
+mostlyclean:
 	rm -f convert md5sum brandelf register
-	rm -f Makefile config.cache config.status
+	rm -f Makefile config.cache config.status config.log
+
+distclean: clean mostlyclean
+	rm -rf alpha ppc sparc64 x86
 
 dep: depend
 
