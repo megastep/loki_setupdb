@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.62 2004-05-11 01:35:17 megastep Exp $ */
+/* $Id: setupdb.c,v 1.63 2004-06-04 01:54:57 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -106,25 +106,28 @@ static const char *get_productname(char *inipath)
     return ret;
 }
 
-static const char *expand_path(product_t *prod, const char *path, char *buf, size_t len)
+static char *expand_path(product_t *prod, const char *path, char *buf, size_t len)
 {
     if ( *path == '/' ) {
         strncpy(buf, path, len);
     } else {
         snprintf(buf, len, "%s/%s", prod->info.root, path);
     }
-    return buf;
+    return loki_trim_slashes(buf);
 }
 
 /* Remove the install path component from the filename to obtain a relative path */
 const char *loki_remove_root(const product_t *prod, const char *path)
 {
-	if(prod && strcmp(path, prod->info.root) &&
-       strstr(path, prod->info.root) == path) {
-		path += strlen(prod->info.root) + 1;
-		/* Remove any extraneous slashes */
-		while ( *path && *path == '/' )
-			path ++;
+	if ( prod ) {
+		if ( !strcmp(path, prod->info.root) )
+			return "";
+		if ( strstr(path, prod->info.root) == path) {
+			path += strlen(prod->info.root) + 1;
+			/* Remove any extraneous slashes */
+			while ( *path && *path == '/' )
+				path ++;
+		}
 	}
 	/* Remove ./ if it is following */
 	if ( path[0]=='.' && path[1]=='/') {
@@ -552,11 +555,24 @@ product_t *loki_openproduct(const char *name)
     return prod;
 }
 
+char *loki_trim_slashes(char *str)
+{
+	char *ptr = str+strlen(str);
+	while ( ptr > str ) {
+		ptr--;
+		if ( *ptr != '/' ) {
+			*(ptr+1) = '\0';
+			break;
+		}
+	}
+	return str;
+}
+
 /* Create a new product entry */
 
 product_t *loki_create_product(const char *name, const char *root, const char *desc, const char *url)
 {
-    char homefile[PATH_MAX], manifest[PATH_MAX], myroot[PATH_MAX], *ptr;
+    char homefile[PATH_MAX], manifest[PATH_MAX], myroot[PATH_MAX];
     xmlDocPtr doc;
     product_t *prod;
 
@@ -573,13 +589,7 @@ product_t *loki_create_product(const char *name, const char *root, const char *d
 
 	/* Clean up the root - it can't have a trailing slash */
 	strncpy(myroot, root, sizeof(myroot));
-	if ( strlen(myroot) > 1 ) {
-		ptr = myroot + strlen(myroot) - 1;
-		while ( ptr>myroot && *ptr == '/' ) {
-			*ptr = '\0';
-			-- ptr;
-		}
-	}
+	loki_trim_slashes(myroot);
 
     snprintf(manifest, sizeof(manifest), "%s/.manifest", myroot);
     mkdir(manifest, 0755);
@@ -1464,6 +1474,9 @@ product_file_t *loki_register_file(product_option_t *option, const char *path, c
 {
     const char *nrpath = loki_remove_root(option->component->product, path);
     product_file_t *file;
+
+	if ( ! *nrpath )  /* Trying to register the root path */
+		return NULL;
 
     /* Check if this file is already registered for this option */
     file = find_file_by_name(option, nrpath);

@@ -194,6 +194,9 @@ product_file_t *loki_findpath(const char *path, product_t *product);
 /* Remove the install path component from the filename to obtain a relative path */
 const char *loki_remove_root(const product_t *prod, const char *path);
 
+/* Utility function : remove trailing slashes from a string */
+char *loki_trim_slashes(char *str);
+
 /* Register a new file, returns 0 if OK. The option is created if it didn't exist before.
    The md5 argument can be NULL, and the checksum will be computed if necesary.
  */
