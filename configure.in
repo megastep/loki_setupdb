@@ -41,6 +41,9 @@ case "$target" in
 	ARCH=hppa ;;
     *sgi*)
 	ARCH=mips ;;
+    powerpc-apple-darwin*)
+	CFLAGS="-Ddarwin"
+	ARCH=ppc ;;
     *ppc* | *powerpc*)
         ARCH=ppc ;;
     *)

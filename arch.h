@@ -19,6 +19,8 @@
 #   include <arpa/nameser.h>
 # elif defined(_AIX)
 #   include <sys/machine.h>
+# elif defined(darwin)
+#   include<ppc/endian.h>
 # else
 #  include <endian.h>
 # endif

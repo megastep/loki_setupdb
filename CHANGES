@@ -1,3 +1,7 @@
+current:
+Ryan C. Gordon (icculus.org) - Tue Jan 14 23:46:31 EST 2003
+ * Committed initial MacOS X patches to CVS on behalf of Jon C.
+
 1.6.1:
 Stephane Peter (Codehost) - Fri Sep 13 18:37:26 PDT 2002
  * Changed versioning scheme to be in sync with Setup version
