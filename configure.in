@@ -38,6 +38,7 @@ AC_CHECK_HEADERS(strings.h)
 AC_CHECK_HEADERS(sys/utsname.h)
 AC_CHECK_HEADERS(sys/sysmacros.h)
 AC_CHECK_HEADERS(sys/mkdev.h)
+AC_CHECK_HEADERS(sys/isa_defs.h)
 AC_CHECK_HEADERS(glob.h)
 AC_CHECK_HEADERS(elf.h)
 
@@ -56,8 +57,6 @@ case "$target" in
 	CFLAGS="$CFLAGS -Dsco"
 	EXTRA_LIBS="-L/udk/usr/lib -lsocket -lnsl -lresolv -lgen"
 	ARCH=x86 ;;
-    *i?86*)
-        ARCH=x86 ;;
     hppa*)
 	CFLAGS="$CFLAGS -I/opt/zlib/include"
 	EXTRA_LIBS="-ldld"
@@ -69,6 +68,9 @@ case "$target" in
         LIBSUFFIX=32
 	EXTRA_LIBS="-L/usr/freeware/lib$LIBSUFFIX"
 	ARCH=mips ;;
+    i?86*solaris*)
+	EXTRA_LIBS="-lsocket -lnsl -lresolv -ldl"
+	ARCH=x86 ;;
     *solaris*)
 	EXTRA_LIBS="-lsocket -lnsl -lresolv -ldl"
 	ARCH=`uname -p` ;;
@@ -87,6 +89,8 @@ case "$target" in
 	;;
     *ppc* | *powerpc*)
         ARCH=ppc ;;
+    *i?86*)
+        ARCH=x86 ;;
     *)
         ARCH=`uname -p 2> /dev/null || uname -m`
 	if test "$ARCH" = powerpc; then
