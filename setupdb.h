@@ -7,7 +7,7 @@
 #include <limits.h>
 
 #ifndef LOKI_PREFIX
-#define LOKI_PREFIX "codehost"
+#define LOKI_PREFIX "loki"
 #endif
 
 /* This is the user's directory where everything is stored */
