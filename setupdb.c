@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.14 2000-10-17 04:47:37 megastep Exp $ */
+/* $Id: setupdb.c,v 1.15 2000-10-17 08:55:43 megastep Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -545,6 +545,14 @@ void loki_seturl_component(product_component_t *comp, const char *url)
     } else {
         comp->url = NULL;
     }
+}
+
+void loki_setversion_component(product_component_t *comp, const char *version)
+{
+    xmlSetProp(comp->node, "version", version);
+    free(comp->version);
+    comp->version = strdup(version);
+    comp->product->changed = 1;
 }
 
 /* Get the URL for updates for a component; defaults to the product's URL if not defined */

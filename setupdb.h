@@ -91,6 +91,7 @@ product_component_t *loki_find_component(product_t *product, const char *name);
 
 const char *loki_getname_component(product_component_t *comp);
 const char *loki_getversion_component(product_component_t *comp);
+void loki_setversion_component(product_component_t *comp, const char *version);
 int loki_isdefault_component(product_component_t *comp);
 
 product_component_t *loki_create_component(product_t *product, const char *name, const char *version);
