@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.7 2000-10-12 03:14:29 megastep Exp $ */
+/* $Id: setupdb.c,v 1.8 2000-10-14 01:06:33 hercules Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -711,24 +711,15 @@ int loki_enumerate_files(product_option_t *opt, product_file_cb cb)
 product_file_t *loki_findpath(const char *path, product_t *product)
 {
     if ( product ) {
-        char fpath[PATH_MAX], abspath[PATH_MAX];
         product_component_t *comp;
         product_option_t *opt;
         product_file_t *file;
-
-        if ( *path == '/' ) {
-            strncpy(abspath, path, sizeof(abspath));
-        } else {
-            getcwd(abspath, sizeof(abspath));
-            strncat(abspath, "/", sizeof(abspath));
-            strncat(abspath, path, sizeof(abspath));
-        }
 
         for( comp = product->components; comp; comp = comp->next ) {
             for( opt = comp->options; opt; opt = opt->next ) {
                 for( file = opt->files; file; file = file->next ) {
                     if ( file->type!=LOKI_FILE_SCRIPT && file->type!=LOKI_FILE_RPM ) {
-                        if ( ! strcmp(abspath, expand_path(product, file->path, fpath, sizeof(fpath))) ) {
+                        if ( ! strcmp(path, file->path) ) {
                             /* We found our match */
                             return file;
                         }
