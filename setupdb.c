@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.66 2004-11-02 03:14:56 megastep Exp $ */
+/* $Id: setupdb.c,v 1.67 2004-11-11 01:39:29 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -815,7 +815,9 @@ int loki_removeproduct(product_t *product)
     /* Remove the symlink */
     snprintf(buf, sizeof(buf), "%s/" LOKI_DIRNAME "/installed/%s/%s.xml", detect_home(), get_xml_base(), product->info.name);
     unlink(buf);
-    
+
+	/* Change the flag so we won't try to save the file */
+    product->changed = 0;
     loki_closeproduct(product);
 
     return 0;
