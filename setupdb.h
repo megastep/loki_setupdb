@@ -199,8 +199,9 @@ int loki_runscripts(product_component_t *component, script_type_t type);
 
 /* Perform automatic update of the uninstaller binaries and script.
    'src' is the path where updated binaries can be copied from.
+   'locale_path' is the path where locale files can be found.
  */
-int loki_upgrade_uninstall(product_t *prod, const char *src);
+int loki_upgrade_uninstall(product_t *prod, const char *src, const char *locale_path);
 
 #ifdef __cplusplus
 };
