@@ -216,6 +216,9 @@ int loki_unregister_file(product_file_t *file);
 /* Update the MD5 sum of a specific file */
 int loki_updatemd5_file(product_t *product, const char *path);
 
+/* Indicate that a file is a desktop item for a binary */
+int loki_setdesktop_file(product_file_t *file, const char *binary);
+
 /* Register a new RPM as having been installed by this product */
 int loki_register_rpm(product_option_t *option, const char *name, const char *version, int revision,
                      int autoremove);

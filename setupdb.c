@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.68 2005-01-25 03:01:28 megastep Exp $ */
+/* $Id: setupdb.c,v 1.69 2005-02-05 01:52:20 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -83,6 +83,7 @@ struct _loki_product_file_t {
     unsigned int mode;
     unsigned int patched : 1;
 	unsigned int mutable : 1;
+	char *desktop;
     union {        
         unsigned char md5sum[16];
         script_type_t scr_type;
@@ -514,6 +515,11 @@ product_t *loki_openproduct(const char *name)
                             file->mutable = 0;
                         }
 						xmlFree(str);
+                        str = xmlGetProp(filenode, "desktop");
+                        if ( str ) {
+							file->desktop = strdup(str);
+							xmlFree(str);
+                        }
                         str = xmlGetProp(filenode, "mode");
                         if ( str ) {
                             sscanf(str,"%o", &file->mode);
@@ -1515,6 +1521,20 @@ product_file_t *loki_register_file(product_option_t *option, const char *path, c
         }
         return registerfile_new(option, nrpath, md5);
     }
+}
+
+/* Indicate that a file is a desktop item for a binary */
+int loki_setdesktop_file(product_file_t *file, const char *binary)
+{
+	if ( file && binary ) {
+		if ( file->desktop )
+			free(file->desktop);
+		file->desktop = strdup(binary);
+		xmlSetProp(file->node, "desktop", binary);
+		file->option->component->product->changed = 1;
+		return 1;
+	}
+	return 0;
 }
 
 /* Check a file against its MD5 checksum, for integrity */
