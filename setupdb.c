@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.12 2000-10-17 03:33:06 megastep Exp $ */
+/* $Id: setupdb.c,v 1.13 2000-10-17 04:07:05 megastep Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -1187,8 +1187,7 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins)
 
             /* Now check against the version of the binaries we have */
 
-            snprintf(cmd, sizeof(cmd), "%s/%s/%s/uninstall --version", src_bins, os_name,
-                     detect_arch());
+            snprintf(cmd, sizeof(cmd), "%s --version", src_bins);
             pipe = popen(cmd, "r");
             if ( pipe ) {
                 int our_maj, our_min, our_rel;
@@ -1212,15 +1211,12 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins)
     /* TODO: Try to install global command in the symlinks path */
 
     if ( perform_upgrade ) {
-        char srcpath[PATH_MAX];
         FILE *src, *dst;
         void *data;
         struct stat st;
         
-        snprintf(srcpath, sizeof(srcpath), "%s/%s/%s/uninstall", src_bins,
-                 os_name, detect_arch());
-        stat(srcpath, &st);
-        src = fopen(srcpath, "rb");
+        stat(src_bins, &st);
+        src = fopen(src_bins, "rb");
         if ( src ) {
             dst = fopen(binpath, "wb");
             if ( dst ) {
@@ -1235,7 +1231,7 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins)
             }
             fclose(src);
         } else {
-            fprintf(stderr, "Couldn't open %s to be copied!\n", srcpath);
+            fprintf(stderr, "Couldn't open %s to be copied!\n", src_bins);
         }
     }
 
