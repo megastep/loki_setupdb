@@ -203,6 +203,10 @@ int loki_runscripts(product_component_t *component, script_type_t type);
  */
 int loki_upgrade_uninstall(product_t *prod, const char *src, const char *locale_path);
 
+/* Extract base and extension from a version string */
+extern void loki_split_version(const char *version,
+                               char *base, int maxbase,
+                               char *ext, int maxext);
 #ifdef __cplusplus
 };
 #endif

@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.24 2000-10-26 21:05:58 megastep Exp $ */
+/* $Id: setupdb.c,v 1.25 2000-10-27 05:41:28 hercules Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -10,6 +10,7 @@
 #include <sys/utsname.h>
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #include <parser.h>
 #include <tree.h>
 
@@ -178,6 +179,21 @@ const char *loki_getnextproduct(void)
     } else {
         return get_productname(globbed.gl_pathv[glob_index++]);
     }
+}
+
+/* Extract base and extension from a version string */
+void loki_split_version(const char *version, char *base, int maxbase,
+                                             char *ext, int maxext)
+{
+    while ( --maxbase && (isalnum(*version) || (*version == '.')) ) {
+        *base++ = *version++;
+    }
+    *base = '\0';
+
+    while ( --maxext && *version ) {
+        *ext++ = *version++;
+    }
+    *ext = '\0';
 }
 
 /* Open a product by name*/
