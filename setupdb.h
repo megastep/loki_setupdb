@@ -210,6 +210,10 @@ int loki_upgrade_uninstall(product_t *prod, const char *src, const char *locale_
 extern void loki_split_version(const char *version,
                                char *base, int maxbase,
                                char *ext, int maxext);
+
+/* Compare two version strings, return true if version1 newer than version2 */
+extern int loki_newer_version(const char *version1, const char *version2);
+
 #ifdef __cplusplus
 };
 #endif

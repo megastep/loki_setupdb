@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.30 2000-11-03 07:02:45 megastep Exp $ */
+/* $Id: setupdb.c,v 1.31 2000-11-10 22:41:06 hercules Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -210,6 +210,72 @@ void loki_split_version(const char *version, char *base, int maxbase,
     }
     *ext = '\0';
 }
+
+static void get_word(const char **string, char *word, int maxlen)
+{
+    while ( (maxlen > 0) && **string && isalpha(**string) ) {
+        *word = **string;
+        ++word;
+        ++*string;
+        --maxlen;
+    }
+    *word = '\0';
+}
+
+static int get_num(const char **string)
+{
+    int num;
+
+    num = atoi(*string);
+    while ( isdigit(**string) ) {
+        ++*string;
+    }
+    return(num);
+}
+
+int loki_newer_version(const char *version1, const char *version2)
+{
+    int newer;
+    int num1, num2;
+    char base1[128], ext1[128];
+    char base2[128], ext2[128];
+    char word1[32], word2[32];
+
+    /* Compare sequences of numbers and letters in the base versions */
+    newer = 0;
+    loki_split_version(version1, base1, sizeof(base1), ext1, sizeof(ext1));
+    version1 = base1;
+    loki_split_version(version2, base2, sizeof(base2), ext2, sizeof(ext2));
+    version2 = base2;
+    while ( !newer && (*version1 && *version2) &&
+            ((isdigit(*version1) && isdigit(*version2)) ||
+             (isalpha(*version1) && isalpha(*version2))) ) {
+        if ( isdigit(*version1) ) {
+            num1 = get_num(&version1);
+            num2 = get_num(&version2);
+            if ( num1 != num2 ) {
+                return(num1 > num2);
+            }
+        } else {
+            get_word(&version1, word1, sizeof(word1));
+            get_word(&version2, word2, sizeof(word2));
+            if ( strcasecmp(word1, word2) != 0 ) {
+                return (strcasecmp(word1, word2) > 0);
+            }
+        }
+        if ( *version1 == '.' ) {
+            ++version1;
+        }
+        if ( *version2 == '.' ) {
+            ++version2;
+        }
+    }
+    if ( isalpha(*version1) && !isalpha(*version2) ) {
+        newer = 1;
+    }
+    return(newer);
+}
+
 
 /* Open a product by name*/
 
