@@ -53,6 +53,7 @@ AC_CHECK_FUNCS(setenv)
 AC_CHECK_FUNCS(unsetenv)
 AC_CHECK_FUNCS(getopt, , GETOPT_C="getopt.c")
 AC_CHECK_FUNCS(getopt_long, , GETOPT_C="getopt.c")
+AC_CHECK_LIB(gnugetopt, getopt_long, EXTRA_LIBS="-lgnugetopt"; GETOPT_C="")
 AC_PATH_PROG(BRANDELF, brandelf, true)
 
 STATIC=""
@@ -64,24 +65,24 @@ dnl Set the architecture flag
 case "$target" in
 *i?86*OpenUNIX* | *i?86*sco*)
 	CFLAGS="$CFLAGS -Dsco"
-	EXTRA_LIBS="-L/udk/usr/lib -lsocket -lnsl -lresolv -lgen"
+	EXTRA_LIBS="$EXTRA_LIBS -L/udk/usr/lib -lsocket -lnsl -lresolv -lgen"
 	ARCH=x86 ;;
 hppa*)
 	CFLAGS="$CFLAGS -I/opt/zlib/include"
-	EXTRA_LIBS="-ldld"
+	EXTRA_LIBS="$EXTRA_LIBS -ldld"
 	STATIC="-Wl,-E"
 	BSTATIC=""
 	BDYNAMIC="-Wl,-a,archive_shared"
 	ARCH=hppa ;;
 *sgi*)
         LIBSUFFIX=32
-	EXTRA_LIBS="-L/usr/freeware/lib$LIBSUFFIX"
+	EXTRA_LIBS="$EXTRA_LIBS -L/usr/freeware/lib$LIBSUFFIX"
 	ARCH=mips ;;
 i?86*solaris*)
-	EXTRA_LIBS="-lsocket -lnsl -lresolv -ldl"
+	EXTRA_LIBS="$EXTRA_LIBS -lsocket -lnsl -lresolv -ldl"
 	ARCH=x86 ;;
 *solaris*)
-	EXTRA_LIBS="-lsocket -lnsl -lresolv -ldl"
+	EXTRA_LIBS="$EXTRA_LIBS -lsocket -lnsl -lresolv -ldl"
 	ARCH=`uname -p` ;;
 powerpc-apple-darwin*)
 	CFLAGS="-Ddarwin"
