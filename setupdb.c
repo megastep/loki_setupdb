@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.61 2004-04-30 00:08:25 megastep Exp $ */
+/* $Id: setupdb.c,v 1.62 2004-05-11 01:35:17 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -122,14 +122,14 @@ const char *loki_remove_root(const product_t *prod, const char *path)
 	if(prod && strcmp(path, prod->info.root) &&
        strstr(path, prod->info.root) == path) {
 		path += strlen(prod->info.root) + 1;
+		/* Remove any extraneous slashes */
+		while ( *path && *path == '/' )
+			path ++;
 	}
 	/* Remove ./ if it is following */
 	if ( path[0]=='.' && path[1]=='/') {
 		path += 2;
 	}
-	/* Remove any extraneous slashes */
-	while ( *path && *path == '/' )
-		path ++;
 	return path;
 }
 
