@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.1.1.1 2000-10-11 01:59:42 megastep Exp $ */
+/* $Id: setupdb.c,v 1.2 2000-10-11 02:13:00 hercules Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -8,8 +8,8 @@
 #include <sys/types.h>
 #include <stdio.h>
 #include <string.h>
-#include <gnome-xml/parser.h>
-#include <gnome-xml/tree.h>
+#include <parser.h>
+#include <tree.h>
 
 #include "setupdb.h"
 #include "md5.h"
