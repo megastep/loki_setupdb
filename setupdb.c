@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.65 2004-10-13 03:30:46 megastep Exp $ */
+/* $Id: setupdb.c,v 1.66 2004-11-02 03:14:56 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -12,6 +12,7 @@
 #include <sys/utsname.h>
 #include <stdio.h>
 #include <string.h>
+#include <errno.h>
 #ifdef HAVE_STRINGS_H
 #include <strings.h>
 #endif
@@ -680,12 +681,24 @@ void loki_setupdateurl_product(product_t *product, const char *url)
 
 int loki_closeproduct(product_t *product)
 {
+    int ret = 0;
     product_component_t *comp, *next;
 	product_envvar_t *var, *nextvar;
 
     if ( product->changed ) {
+        char tmp[PATH_MAX];
+        /* This isn't harmful as long as it's not a world writeable directory */
+        snprintf(tmp, sizeof(tmp), "%s.%05d", product->info.registry_path, getpid());
         /* Write XML file to disk if it has changed */
-        xmlSaveFile(product->info.registry_path, product->doc);
+        xmlSaveFile(tmp, product->doc);
+
+        if(rename(tmp, product->info.registry_path) != 0)
+        {
+            /* too bad but we can't do much about it */
+            fprintf(stderr, "Unable to overwrite %s: %s.\nRegistry saved as %s.\n",
+                    product->info.registry_path, strerror(errno), tmp);
+            ret = -1;
+        }
     }
 
     /* Go through all the allocated structs */
@@ -751,7 +764,7 @@ int loki_closeproduct(product_t *product)
 	}
 
     free(product);
-    return 0;
+    return ret;
 }
 
 /* Clean up a product from the registry, i.e. removes all support files and directories */
