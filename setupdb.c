@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.58 2004-04-15 02:54:10 megastep Exp $ */
+/* $Id: setupdb.c,v 1.59 2004-04-22 00:36:15 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -542,7 +542,7 @@ product_t *loki_openproduct(const char *name)
 
 product_t *loki_create_product(const char *name, const char *root, const char *desc, const char *url)
 {
-    char homefile[PATH_MAX], manifest[PATH_MAX];
+    char homefile[PATH_MAX], manifest[PATH_MAX], myroot[PATH_MAX], *ptr;
     xmlDocPtr doc;
     product_t *prod;
 
@@ -557,7 +557,17 @@ product_t *loki_create_product(const char *name, const char *root, const char *d
 	strncat(homefile, get_xml_base(), sizeof(homefile)-strlen(homefile));
 	mkdir(homefile, 0700);
 
-    snprintf(manifest, sizeof(manifest), "%s/.manifest", root);
+	/* Clean up the root - it can't have a trailing slash */
+	strncpy(myroot, root, sizeof(myroot));
+	if ( strlen(myroot) > 1 ) {
+		ptr = myroot + strlen(myroot) - 1;
+		while ( ptr>myroot && *ptr == '/' ) {
+			*ptr = '\0';
+			-- ptr;
+		}
+	}
+
+    snprintf(manifest, sizeof(manifest), "%s/.manifest", myroot);
     mkdir(manifest, 0755);
 
     /* Create a new XML tree from scratch; we'll have to dump it to disk later */
@@ -603,13 +613,13 @@ product_t *loki_create_product(const char *name, const char *root, const char *d
     }
     snprintf(homefile, sizeof(homefile), "%d.%d", SETUPDB_VERSION_MAJOR, SETUPDB_VERSION_MINOR);
     xmlSetProp(doc->root, "xmlversion", homefile);
-    strncpy(prod->info.root, root, sizeof(prod->info.root));
-    xmlSetProp(doc->root, "root", root);
+    strncpy(prod->info.root, myroot, sizeof(prod->info.root));
+    xmlSetProp(doc->root, "root", myroot);
     strncpy(prod->info.url, url, sizeof(prod->info.url));
     strcpy(prod->info.prefix, ".");
     xmlSetProp(doc->root, "update_url", url);
     snprintf(prod->info.registry_path, sizeof(prod->info.registry_path), "%s/.manifest/%s.xml",
-             root, name);
+             myroot, name);
 
     return prod;
 }
