@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.3 2000-10-11 08:57:32 megastep Exp $ */
+/* $Id: setupdb.c,v 1.4 2000-10-11 21:00:54 megastep Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -87,6 +87,22 @@ static const char *get_xml_string(product_t *product, xmlNodePtr node)
 {
     const char *text = xmlNodeListGetString(product->doc, node->childs, 1);
     return text;
+}
+
+static void insert_end_file(product_file_t *file, product_file_t **opt)
+{
+    file->next = NULL;
+    if ( *opt ) {
+        product_file_t *it;
+        for( it = *opt; it; it = it->next ) {
+            if ( it->next == NULL ) {
+                it->next = file;
+                return;
+            }
+        }
+    } else {
+        *opt = file;
+    }
 }
 
 const char *loki_getfirstproduct(void)
@@ -209,6 +225,14 @@ product_t *loki_openproduct(const char *name)
                             t = LOKI_FILE_RPM;
                         } else if ( !strcmp(filenode->name, "script") ) {
                             t = LOKI_FILE_SCRIPT;
+                            str = xmlGetProp(filenode, "type");
+                            if ( str ) {
+                                if ( !strcmp(str, script_types[LOKI_SCRIPT_PREUNINSTALL]) ) {
+                                    file->data.scr_type = LOKI_SCRIPT_PREUNINSTALL;
+                                } else if ( !strcmp(str, script_types[LOKI_SCRIPT_POSTUNINSTALL]) ) {
+                                    file->data.scr_type = LOKI_SCRIPT_POSTUNINSTALL;
+                                }
+                            }
                         } else {
                             t = LOKI_FILE_NONE;
                         }
@@ -217,14 +241,21 @@ product_t *loki_openproduct(const char *name)
                         file->type = t;
                         file->path = strdup(str); /* The expansion is done in loki_getname_file() */
 
-                        file->next = opt->files;
-                        opt->files = file;
+                        insert_end_file(file, &opt->files);
                     }
                 } else if ( !strcmp(optnode->name, "script") ) {
                     product_file_t *file = (product_file_t *) malloc(sizeof(product_file_t));
                     file->node = optnode;
                     file->type = LOKI_FILE_SCRIPT;
-                    memset(file->data.md5sum, 0, 16);
+
+                    str = xmlGetProp(optnode, "type");
+                    if ( str ) {
+                        if ( !strcmp(str, script_types[LOKI_SCRIPT_PREUNINSTALL]) ) {
+                            file->data.scr_type = LOKI_SCRIPT_PREUNINSTALL;
+                        } else if ( !strcmp(str, script_types[LOKI_SCRIPT_POSTUNINSTALL]) ) {
+                            file->data.scr_type = LOKI_SCRIPT_POSTUNINSTALL;
+                        }
+                    }
                     file->path = strdup(get_xml_string(prod, optnode));
                     file->next = comp->scripts;                    
                     comp->scripts = file;
@@ -734,8 +765,8 @@ static int registerfile_new(product_option_t *option, const char *path, const ch
         return -1;
     }
     file->option = option;
-    file->next = option->files;
-    option->files = file;
+    insert_end_file(file, &option->files);
+
     option->component->product->changed = 1;
     return 0;
 }
