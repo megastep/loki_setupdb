@@ -33,14 +33,24 @@
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
-#include <zlib.h>
 #include <fcntl.h>
+#include <sys/stat.h>
+#ifndef NO_ZLIB
+#include <zlib.h>
+#endif
 
+#ifdef WIN32
+#define BIG_ENDIAN  0
+#define LIL_ENDIAN  1
+#define BYTE_ORDER  LIL_ENDIAN
+#else
+#define HAVE_FTW
 #ifdef __FreeBSD__
 #include <machine/endian.h>
 #else
 #include <endian.h>
 #endif
+#endif /* WIN32 */
 
 #include "md5.h"
 
@@ -348,7 +358,7 @@ unsigned char *get_md5_bin(const char *asciisum)
 int md5_compute(const char *path, char md5sum[], int unpack)
 {
     char buf[4096];
-    ssize_t count;
+    size_t count;
     MD5_CONTEXT ctx;
 
 #ifdef NO_ZLIB
@@ -386,7 +396,11 @@ int md5_compute(const char *path, char md5sum[], int unpack)
 
 #ifdef MD5SUM_PROGRAM
 
+#ifdef HAVE_FTW
 #include <ftw.h>
+#else
+#define FTW_F   0
+#endif
 
 static int unpack = 0;
 
@@ -419,11 +433,15 @@ int main(int argc, char **argv)
 
     for( i = 1; i < argc; ++i ) {
         if( ! stat(argv[i], &st) ) {
+#ifdef HAVE_FTW
             if ( S_ISREG(st.st_mode) ) {
                 ftw_func(argv[i], &st, FTW_F);
             } else {
                 ftw(argv[i], ftw_func, 3);
             }
+#else
+            ftw_func(argv[i], &st, FTW_F);
+#endif
         } else {
             perror("stat");
             return 1;
