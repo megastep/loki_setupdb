@@ -1,6 +1,27 @@
 #ifndef __ARCH_H__
 #define __ARCH_H__
 
+/* Make sure the BYTE_ORDER macro is defined */
+
+#ifdef WIN32
+# define BIG_ENDIAN  0
+# define LIL_ENDIAN  1
+# define BYTE_ORDER  LIL_ENDIAN
+#else
+# define HAVE_FTW
+# ifdef __FreeBSD__
+#   include <machine/endian.h>
+# elif defined(sgi)
+#   include <sys/endian.h>
+# elif defined(__svr4__)
+#   include <sys/byteorder.h>
+# elif defined(hpux)
+#   include <arpa/nameser.h>
+# else
+#  include <endian.h>
+# endif
+#endif /* WIN32 */
+
 /**** Utility functions to detect the current environment ****/
 
 /*
@@ -15,7 +36,13 @@ typedef enum {
 	DISTRO_SLACKWARE,
 	DISTRO_CALDERA,
 	DISTRO_LINUXPPC,
+	DISTRO_YELLOWDOG,
+	DISTRO_FREEBSD,
 	DISTRO_SOLARIS,
+	DISTRO_HPUX,
+	DISTRO_IRIX,
+	DISTRO_SCO,
+	DISTRO_AIX,
 	NUM_DISTRIBUTIONS
 } distribution;
 

@@ -1,6 +1,7 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.43 2002-04-03 08:05:02 megastep Exp $ */
+/* $Id: setupdb.c,v 1.44 2002-09-17 22:14:39 megastep Exp $ */
 
+#include "config.h"
 #include <glob.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -10,11 +11,14 @@
 #include <sys/utsname.h>
 #include <stdio.h>
 #include <string.h>
+#ifdef HAVE_STRINGS_H
+#include <strings.h>
+#endif
 #include <ctype.h>
 #include <parser.h>
 #include <tree.h>
 
-#ifdef __sun__
+#ifdef HAVE_SYS_MKDEV_H
 #include <sys/mkdev.h>
 #endif
 
@@ -58,7 +62,8 @@ struct _loki_product_file_t {
     char *path;
     file_type_t type;
     unsigned int mode;
-    int patched;
+    unsigned int patched : 1;
+	unsigned int mutable : 1;
     union {        
         unsigned char md5sum[16];
         script_type_t scr_type;
@@ -93,11 +98,16 @@ static const char *expand_path(product_t *prod, const char *path, char *buf, siz
     return buf;
 }
 
-static const char *remove_root(product_t *prod, const char *path)
+/* Remove the install path component from the filename to obtain a relative path */
+const char *loki_remove_root(const product_t *prod, const char *path)
 {
-	if(strcmp(path, prod->info.root) &&
+	if(prod && strcmp(path, prod->info.root) &&
        strstr(path, prod->info.root) == path) {
-		return path + strlen(prod->info.root) + 1;
+		path += strlen(prod->info.root) + 1;
+	}
+	/* Remove ./ if it is following */
+	if ( path[0]=='.' && path[1]=='/') {
+		path += 2;
 	}
 	return path;
 }
@@ -446,6 +456,12 @@ product_t *loki_openproduct(const char *name)
                             file->patched = 1;
                         } else {
                             file->patched = 0;
+                        }
+                        str = xmlGetProp(filenode, "mutable");
+                        if ( str && *str=='y' ) {
+                            file->mutable = 1;
+                        } else {
+                            file->mutable = 0;
                         }
                         str = xmlGetProp(filenode, "mode");
                         if ( str ) {
@@ -1097,6 +1113,18 @@ void loki_setpatched_file(product_file_t *file, int flag)
     file->option->component->product->changed = 1;
 }
 
+int loki_getmutable_file(product_file_t *file)
+{
+	return file->mutable;
+}
+
+void loki_setmutable_file(product_file_t *file, int flag)
+{
+    file->mutable = flag;
+    xmlSetProp(file->node, "mutable", flag ? "yes" : "no");
+    file->option->component->product->changed = 1;
+}
+
 product_option_t *loki_getoption_file(product_file_t *file)
 {
     return file->option;
@@ -1148,7 +1176,7 @@ product_file_t *loki_findpath(const char *path, product_t *product)
             for( opt = comp->options; opt; opt = opt->next ) {
                 for( file = opt->files; file; file = file->next ) {
                     if ( file->type!=LOKI_FILE_SCRIPT && file->type!=LOKI_FILE_RPM ) {
-                        if ( ! strcmp(remove_root(product, path), file->path) ) {
+                        if ( ! strcmp(loki_remove_root(product, path), file->path) ) {
                             /* We found our match */
                             return file;
                         }
@@ -1318,7 +1346,7 @@ static product_file_t *registerfile_update(product_option_t *option, product_fil
 /* Register a file, returns 0 if OK */
 product_file_t *loki_register_file(product_option_t *option, const char *path, const char *md5)
 {
-    const char *nrpath = remove_root(option->component->product, path);
+    const char *nrpath = loki_remove_root(option->component->product, path);
     product_file_t *file;
 
     /* Check if this file is already registered for this option */
@@ -1348,6 +1376,9 @@ file_check_t loki_check_file(product_file_t *file)
     case LOKI_FILE_REGULAR:
 		if ( access(path, F_OK) < 0 )
 			return LOKI_REMOVED;
+		if ( file->mutable )
+			return LOKI_OK;
+
 		/* Compare MD5 checksums if file exists */
 		md5_compute(path, md5sum, 1);
 		str = xmlGetProp(file->node, "md5");
@@ -1357,6 +1388,8 @@ file_check_t loki_check_file(product_file_t *file)
     case LOKI_FILE_SYMLINK:
 		if ( lstat(path, &st) < 0 )
 			return LOKI_REMOVED;
+		if ( file->mutable )
+			return LOKI_OK;
 		/*  Compare symlinks contents */
 		str = xmlGetProp(file->node, "dest");
 		if ( str ) {
@@ -1432,7 +1465,7 @@ static void unregister_file(product_file_t *file, product_file_t **opt)
 int loki_unregister_path(product_option_t *option, const char *path)
 {
     product_file_t *file = find_file_by_name(option,
-                                             remove_root(option->component->product,path));
+                                             loki_remove_root(option->component->product,path));
     if ( file ) {
         unregister_file(file, &option->files);
         option->component->product->changed = 1;
@@ -1743,7 +1776,7 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
 
     strncat(binpath, "/uninstall", sizeof(binpath));
 
-    if ( !access(binpath, F_OK) ) {
+    if ( !access(binpath, X_OK) ) {
         char cmd[PATH_MAX];
         FILE *pipe;
         
@@ -1871,19 +1904,40 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
                 "{\n"
                 "        status=1\n"
                 "        case `uname -m` in\n"
-                "                i?86)  echo \"x86\"\n"
-                "                        status=0;;\n"
-                "                *)     echo \"`uname -m`\"\n"
-                "                        status=0;;\n"
-                "        esac\n"
+                "           i?86)  echo \"x86\"\n"
+                "                  status=0;;\n"
+				"           90*/*)\n"
+				"		   echo \"hppa\"\n"
+				"		   status=0;;\n"
+				"	    *)\n"
+				"		case `uname -s` in\n"
+				"		    IRIX*)\n"
+				"			echo \"mips\"\n"
+				"			status=0;;\n"
+				"		    *)\n"
+				"			echo \"`uname -m`\"\n"
+				"			status=0;;\n"
+				"		esac\n"
+				"        esac\n"
                 "        return $status\n"
                 "}\n\n"
 
-                "if which " LOKI_PREFIX "-uninstall > /dev/null 2>&1; then\n"
+				"DetectOS()\n"
+				"{\n"
+				"  os=`uname -s`\n"
+				"  if test \"$os\" = OpenUNIX; then\n"
+				"     echo SCO_SV\n"
+				"  else\n"
+				"     echo $os\n"
+				"  fi\n"
+				"  return 0\n"
+				"}\n\n"
+
+                "if type " LOKI_PREFIX "-uninstall > /dev/null 2>&1; then\n"
                 "    UNINSTALL=" LOKI_PREFIX "-uninstall\n"
                 "else\n"
-                "    UNINSTALL=\"$HOME/" LOKI_DIRNAME "/installed/bin/`uname -s`/`DetectARCH`/uninstall\"\n"
-                "    if [ ! -x \"$UNINSTALL\" ]; then\n"
+                "    UNINSTALL=\"$HOME/" LOKI_DIRNAME "/installed/bin/`DetectOS`/`DetectARCH`/uninstall\"\n"
+                "    if test ! -x \"$UNINSTALL\" ; then\n"
                 "        echo Could not find a usable uninstall program. Aborting.\n"
                 "        exit 1\n"
                 "    fi\n"

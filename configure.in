@@ -1,11 +1,16 @@
 AC_INIT
-dnl AC_CONFIG_SRCDIR([setupdb.c]) dnl This looks obsolete
+AC_CONFIG_HEADER(config.h)
 
 dnl Define the release numbers here
 
 SETUPDB_VERSION_MAJOR=1
-SETUPDB_VERSION_MINOR=0
-SETUPDB_VERSION_RELEASE=2
+SETUPDB_VERSION_MINOR=6
+SETUPDB_VERSION_RELEASE=1
+
+PACKAGE_NAME="Loki Setup DataBase Library"
+PACKAGE_TARNAME="setupdb"
+PACKAGE_VERSION="$SETUPDB_VERSION_MAJOR.$SETUPDB_VERSION_MINOR.$SETUPDB_VERSION_RELEASE"
+PACKAGE_STRING="$PACKAGE_NAME v$PACKAGE_VERSION"
 
 CFLAGS="-fsigned-char -Wall -g -O2 -I."
 
@@ -17,14 +22,24 @@ AC_PROG_CC
 AC_PROG_MAKE_SET
 
 AC_CHECK_HEADERS(unistd.h)
+AC_CHECK_HEADERS(strings.h)
 AC_CHECK_HEADERS(sys/utsname.h)
+AC_CHECK_HEADERS(sys/mkdev.h)
 AC_CHECK_HEADERS(glob.h)
 AC_CHECK_HEADERS(elf.h)
 
 dnl Set the architecture flag
 case "$target" in
+    *i?86*OpenUNIX* | *i?86*sco*)
+	CFLAGS="$CFLAGS -Dsco"
+	ARCH=x86 ;;
     *i?86*)
         ARCH=x86 ;;
+    hppa*)
+	CFLAGS="$CFLAGS -I/opt/zlib/include"
+	ARCH=hppa ;;
+    *sgi*)
+	ARCH=mips ;;
     *)
         ARCH=`uname -m` ;;
 esac
@@ -55,6 +70,13 @@ if test ! -z "$HAVEXML"; then
     LIBS="$LIBS $XML_LIBS"
 else
     AC_MSG_ERROR([*** xml-config not found. You need a working libxml installation.])
+fi
+
+AC_ARG_WITH(vendor,
+[  --with-vendor           with specified vendor prefix  [default=codehost]], 
+	,   with_vendor=codehost)
+if test x$with_vendor != xcodehost; then
+        CFLAGS="$CFLAGS -DLOKI_PREFIX=\\\"$with_vendor\\\""
 fi
 
 AC_OUTPUT(Makefile)

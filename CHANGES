@@ -1,3 +1,8 @@
+1.6.1:
+Stephane Peter (Codehost) - Fri Sep 13 18:37:26 PDT 2002
+ * Changed versioning scheme to be in sync with Setup version
+   numbers.
+
 1.0.3:
 Stéphane Peter (Codehost) - Sun Jan 27 17:04:55 PST 2002
  * Added loki_check_file() function to verify installed files.
@@ -9,6 +14,14 @@ Stephane Peter (Codehost) - Wed Feb  6 16:41:01 PST 2002
  * Register uninstallation messages for components.
 Stephane Peter (Codehost) - Tue Feb 26 17:29:16 PST 2002
  * Initial Solaris 8 port.
+Stephane Peter (Codehost) - Tue Apr 16 17:38:27 PDT 2002
+ * Initial HP-UX 11.0 port
+Stephane Peter (Codehost) - Fri May  3 19:04:43 PDT 2002
+ * Added 'mutable' flag for files, to allow changes to them.
+Stephane Peter (Codehost) - Fri Jun 28 18:45:56 PDT 2002
+ * Initial IRIX 6.5 port
+Stephane Peter (Codehost) - Tue Jul 23 19:49:38 PDT 2002
+ * Preliminary SCO/OpenUnix port
 
 1.0.2:
 Sam Lantinga - Mon Apr 30 17:07:48 PDT 2001

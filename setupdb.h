@@ -164,10 +164,15 @@ unsigned int loki_getmode_file(product_file_t *file);
 /* Set the UNIX mode for the file */
 void loki_setmode_file(product_file_t *file, unsigned int mode);
 
-/* Get / set the 'patched' attribute of a flag, i.e. it should not be removed unless
+/* Get / set the 'patched' attribute of a file, i.e. it should not be removed unless
    the whole application is removed */
 int loki_getpatched_file(product_file_t *file);
 void loki_setpatched_file(product_file_t *file, int flag);
+
+/* Get / set the 'mutable' attribute of a file, i.e. it should not be considered corrupt
+   if it changes */
+int loki_getmutable_file(product_file_t *file);
+void loki_setmutable_file(product_file_t *file, int flag);
 
 product_option_t *loki_getoption_file(product_file_t *file);
 product_component_t *loki_getcomponent_file(product_file_t *file);
@@ -184,6 +189,9 @@ int loki_enumerate_files(product_option_t *opt, product_file_cb cb);
 /* Find to which product / option a file belongs; 'product' is optional */
 
 product_file_t *loki_findpath(const char *path, product_t *product);
+
+/* Remove the install path component from the filename to obtain a relative path */
+const char *loki_remove_root(const product_t *prod, const char *path);
 
 /* Register a new file, returns 0 if OK. The option is created if it didn't exist before.
    The md5 argument can be NULL, and the checksum will be computed if necesary.

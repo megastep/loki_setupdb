@@ -1,6 +1,6 @@
 #
 # Makefile for the Loki registry library
-# $Id: Makefile.in,v 1.9 2002-04-03 08:05:02 megastep Exp $
+# $Id: Makefile.in,v 1.10 2002-09-17 22:14:39 megastep Exp $
 #
 
 CC		:= @CC@

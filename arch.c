@@ -1,4 +1,4 @@
-/* $Id: arch.c,v 1.5 2002-04-03 08:05:02 megastep Exp $ */
+/* $Id: arch.c,v 1.6 2002-09-17 22:14:39 megastep Exp $ */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -32,8 +32,12 @@ const char *detect_arch(void)
 #else /* Linux ? */
         arch = "sparc64";
 #endif
+#elif defined(hppa)
+	arch = "hppa";
 #elif defined(__arm__)
         arch = "arm";
+#elif defined(mips)
+	arch = "mips";
 #else
         arch = "unknown";
 #endif
@@ -47,6 +51,10 @@ const char *detect_os(void)
     static struct utsname buf;
 
     uname(&buf);
+	/* Exception: OpenUnix is really SCO */
+	if ( !strcmp(buf.sysname, "OpenUNIX") ) {
+		return "SCO_SV";
+	}
     return buf.sysname;
 }
 
@@ -194,7 +202,13 @@ const char *distribution_name[NUM_DISTRIBUTIONS] = {
 	"Slackware",
 	"Caldera OpenLinux",
 	"Linux/PPC",
-	"Sun Solaris"
+	"Yellow Dog Linux",
+	"FreeBSD",
+	"Sun Solaris",
+	"HP-UX",
+	"SGI IRIX",
+	"SCO UnixWare/OpenServer",
+	"IBM AIX"
 };
 
 const char *distribution_symbol[NUM_DISTRIBUTIONS] = {
@@ -206,17 +220,43 @@ const char *distribution_symbol[NUM_DISTRIBUTIONS] = {
 	"slackware",
 	"caldera",
 	"linuxppc",
-	"solaris"
+	"yellowdog",
+	"freebsd",
+	"solaris",
+	"hpux",
+	"irix",
+	"sco",
+	"aix"
 };
 
 /* Detect the distribution type and version */
 distribution detect_distro(int *maj_ver, int *min_ver)
 {
-#if defined(sun) && defined(__svr4__)
+#if defined(__sun) && defined(__svr4__)
 	struct utsname n;
 	uname(&n);
 	sscanf(n.release, "%d.%d", maj_ver, min_ver);
 	return DISTRO_SOLARIS;
+#elif defined(__hpux)
+	struct utsname n;
+	uname(&n);
+	sscanf(n.release, "%*c.%d.%d", maj_ver, min_ver);
+	return DISTRO_HPUX;
+#elif defined(sgi)
+	struct utsname n;
+	uname(&n);
+	sscanf(n.release, "%d.%d", maj_ver, min_ver);
+	return DISTRO_IRIX;
+#elif defined(sco)
+	struct utsname n;
+	uname(&n);
+	sscanf(n.release, "%d.%d", maj_ver, min_ver);
+	return DISTRO_SCO;
+#elif defined(__FreeBSD__)
+	struct utsname n;
+	uname(&n);
+	sscanf(n.release, "%d.%d", maj_ver, min_ver);
+	return DISTRO_FREEBSD;
 #else
 	if ( !access("/etc/mandrake-release", F_OK) ) {
 		find_version("/etc/mandrake-release", maj_ver, min_ver); 
@@ -224,6 +264,10 @@ distribution detect_distro(int *maj_ver, int *min_ver)
 	} else if ( !access("/etc/SuSE-release", F_OK) ) {
 		find_version("/etc/SuSE-release", maj_ver, min_ver); 
 		return DISTRO_SUSE;
+		/* Look for YellowDog Linux */
+	} else if ( !access("/etc/yellowdog-release", F_OK) ) {
+		find_version("/etc/yellowdog-release", maj_ver, min_ver); 
+		return DISTRO_YELLOWDOG;
 	} else if ( !access("/etc/redhat-release", F_OK) ) {
 		find_version("/etc/redhat-release", maj_ver, min_ver); 
 #if defined(PPC) || defined(powerpc)
