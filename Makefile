@@ -1,6 +1,6 @@
 #
 # Makefile for the Loki registry library
-# $Id: Makefile,v 1.11 2000-10-27 22:46:52 megastep Exp $
+# $Id: Makefile,v 1.12 2000-10-27 22:53:23 megastep Exp $
 #
 
 CC		:= gcc
@@ -53,7 +53,7 @@ distclean: clean
 dep: depend
 
 depend:
-	$(CC) -MM $(CFLAGS) $(OBJS:.o=.c) > .depend
+	$(CC) -MM $(CFLAGS) $(CSRC) > .depend
 
 ifeq ($(wildcard .depend),.depend)
 include .depend
