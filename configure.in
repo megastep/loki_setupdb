@@ -31,6 +31,7 @@ AC_CHECK_HEADERS(elf.h)
 
 AC_CHECK_FUNCS(setenv)
 AC_CHECK_FUNCS(unsetenv)
+AC_PATH_PROG(BRANDELF, brandelf, true)
 
 dnl Set the architecture flag
 case "$target" in
@@ -99,4 +100,5 @@ IMAGE="$with_image"
 
 
 AC_SUBST(IMAGE)
+AC_SUBST(BRANDELF)
 AC_OUTPUT(Makefile)
