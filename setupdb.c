@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.54 2003-04-04 03:32:09 megastep Exp $ */
+/* $Id: setupdb.c,v 1.55 2003-07-02 22:49:07 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -756,6 +756,8 @@ int loki_removeproduct(product_t *product)
     if(rmdir(buf)<0)
         perror("Could not remove .manifest directory");
 
+    /* We can't be removing the current directory, move somewhere else! */
+    chdir("/");
 
     if(rmdir(product->info.root) < 0)
         perror("Could not remove install directory");
