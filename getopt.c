@@ -48,6 +48,15 @@ __RCSID("$NetBSD: getopt_long.c,v 1.6.2.2 2000/10/17 22:07:00 tv Exp $");
 #include <unistd.h>
 
 #include "config.h"
+#include "setupdb.h"
+
+#ifdef HAVE_LIBINTL_H
+#include <libintl.h>
+#endif
+
+#ifndef gettext_noop
+# define gettext_noop(String) (String)
+#endif
 
 #ifdef __weak_alias
 __weak_alias(getopt,_getopt)
