@@ -1,10 +1,10 @@
 #
 # Makefile for the Loki registry library
-# $Id: Makefile.in,v 1.18 2003-03-21 07:34:37 megastep Exp $
+# $Id: Makefile.in,v 1.19 2004-08-13 01:07:23 megastep Exp $
 #
 
 CC		:= @CC@
-CSRC	:= setupdb.c md5.c arch.c
+CSRC	:= setupdb.c md5.c arch.c @GETOPT_C@
 OS      := $(shell uname -s)
 ARCH    := @ARCH@
 OBJS    := $(CSRC:%.c=$(ARCH)/%.o)

@@ -46,8 +46,12 @@ AC_CHECK_HEADERS(glob.h)
 AC_CHECK_HEADERS(elf.h)
 AC_CHECK_HEADERS(getopt.h)
 
+GETOPT_C=""
+
 AC_CHECK_FUNCS(setenv)
 AC_CHECK_FUNCS(unsetenv)
+AC_CHECK_FUNCS(getopt, , GETOPT_C="getopt.c")
+AC_CHECK_FUNCS(getopt_long, , GETOPT_C="getopt.c")
 AC_PATH_PROG(BRANDELF, brandelf, true)
 
 STATIC=""
@@ -57,34 +61,34 @@ BDYNAMIC="-Wl,-Bdynamic"
 
 dnl Set the architecture flag
 case "$target" in
-    *i?86*OpenUNIX* | *i?86*sco*)
+*i?86*OpenUNIX* | *i?86*sco*)
 	CFLAGS="$CFLAGS -Dsco"
 	EXTRA_LIBS="-L/udk/usr/lib -lsocket -lnsl -lresolv -lgen"
 	ARCH=x86 ;;
-    hppa*)
+hppa*)
 	CFLAGS="$CFLAGS -I/opt/zlib/include"
 	EXTRA_LIBS="-ldld"
 	STATIC="-Wl,-E"
 	BSTATIC=""
 	BDYNAMIC="-Wl,-a,archive_shared"
 	ARCH=hppa ;;
-    *sgi*)
+*sgi*)
         LIBSUFFIX=32
 	EXTRA_LIBS="-L/usr/freeware/lib$LIBSUFFIX"
 	ARCH=mips ;;
-    i?86*solaris*)
+i?86*solaris*)
 	EXTRA_LIBS="-lsocket -lnsl -lresolv -ldl"
 	ARCH=x86 ;;
-    *solaris*)
+*solaris*)
 	EXTRA_LIBS="-lsocket -lnsl -lresolv -ldl"
 	ARCH=`uname -p` ;;
-    powerpc-apple-darwin*)
+powerpc-apple-darwin*)
 	CFLAGS="-Ddarwin"
 	BSTATIC=""
 	BDYNAMIC=""
 	REENTRANT=""
 	ARCH=ppc ;;
-    *aix* )
+*aix*)
 	BSTATIC=""
 	BDYNAMIC=""
 	ARCH=`uname -p`
@@ -92,11 +96,11 @@ case "$target" in
                 ARCH=ppc
         fi
 	;;
-    *ppc* | *powerpc*)
+*ppc* | *powerpc*)
         ARCH=ppc ;;
-    *i?86*)
+*i?86*)
         ARCH=x86 ;;
-    *)
+*)
         ARCH=`uname -p 2> /dev/null || uname -m`
 	if test "$ARCH" = powerpc; then
 		ARCH=ppc
@@ -122,6 +126,7 @@ AC_SUBST(STATIC)
 AC_SUBST(SETUPDB_VERSION_MAJOR)
 AC_SUBST(SETUPDB_VERSION_MINOR)
 AC_SUBST(SETUPDB_VERSION_RELEASE)
+AC_SUBST(GETOPT_C)
 
 dnl Look for the XML libraries
 

@@ -275,6 +275,38 @@ extern void loki_split_version(const char *version,
 /* Compare two version strings, return true if version1 newer than version2 */
 extern int loki_newer_version(const char *version1, const char *version2);
 
+/* We provide getopt and getopt_long if needed */
+
+#ifndef HAVE_GETOPT_H
+extern int getopt(int argc, char *const *argv, const char *opts);
+#endif
+
+#ifndef HAVE_GETOPT_LONG
+
+#define no_argument        0
+#define required_argument  1
+#define optional_argument  2
+
+struct option {
+	/* name of long option */
+	const char *name;
+	/*
+	 * one of no_argument, required_argument, and optional_argument:
+	 * whether option takes an argument
+	 */
+	int has_arg;
+	/* if not NULL, set *flag to val when option found */
+	int *flag;
+	/* if flag not NULL, value to set *flag to; else return value */
+	int val;
+};
+
+extern int getopt_long(int, char * const *, const char *,
+				const struct option *, int *);
+
+#endif
+
+
 #ifdef __cplusplus
 };
 #endif
