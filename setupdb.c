@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.9 2000-10-14 01:11:20 hercules Exp $ */
+/* $Id: setupdb.c,v 1.10 2000-10-14 01:22:22 hercules Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -737,9 +737,11 @@ static product_file_t *registerfile_new(product_option_t *option, const char *pa
 {
     struct stat st;
     char dev[10];
+    char full[PATH_MAX];
     product_file_t *file;
 
-    if ( lstat(path, &st) < 0 ) {
+    expand_path(option->component->product, path, full, sizeof(full));
+    if ( lstat(full, &st) < 0 ) {
         return NULL;
     }
     file = (product_file_t *)malloc(sizeof(product_file_t));
