@@ -4,7 +4,7 @@ dnl Define the release numbers here
 
 SETUPDB_VERSION_MAJOR=1
 SETUPDB_VERSION_MINOR=0
-SETUPDB_VERSION_RELEASE=1
+SETUPDB_VERSION_RELEASE=2
 
 CFLAGS="-fsigned-char -Wall -g -O2 -I."
 

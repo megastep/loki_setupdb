@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.40 2001-04-04 17:20:27 hercules Exp $ */
+/* $Id: setupdb.c,v 1.41 2001-04-30 23:13:35 hercules Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -297,7 +297,7 @@ product_t *loki_openproduct(const char *name)
     xmlNodePtr node;
     product_t *prod;
 
-    if ( *name == '/' ) { /* Absolute path to a manifest.ini file */
+    if ( strchr(name, '/') != NULL ) { /* Absolute path to a manifest file */
         doc = xmlParseFile(name);
     } else {
         /* Look for a matching case-insensitive file */
