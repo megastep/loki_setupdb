@@ -29,6 +29,9 @@ AC_CHECK_HEADERS(sys/mkdev.h)
 AC_CHECK_HEADERS(glob.h)
 AC_CHECK_HEADERS(elf.h)
 
+AC_CHECK_FUNCS(setenv)
+AC_CHECK_FUNCS(unsetenv)
+
 dnl Set the architecture flag
 case "$target" in
     *i?86*OpenUNIX* | *i?86*sco*)
@@ -56,9 +59,6 @@ esac
 
 dnl Add architecture-specific compile flags
 case "$target" in
-    powerpc*-*-linux*)
-        CFLAGS="$CFLAGS -Wa,-mall"
-	;;
     alpha*-*-linux*)
         if test x$ac_cv_c_compiler_gnu = xyes; then
             CFLAGS="$CFLAGS -mcpu=ev4 -Wa,-mall"

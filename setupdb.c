@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.46 2002-12-07 00:52:41 megastep Exp $ */
+/* $Id: setupdb.c,v 1.47 2003-02-27 06:15:10 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -29,12 +29,22 @@
 #include "arch.h"
 #include "md5.h"
 
+typedef struct _loki_envvar_t 
+{
+	xmlNodePtr node;
+	char *name;
+	char *value;
+	struct _loki_envvar_t *next;
+} product_envvar_t;
+
 struct _loki_product_t
 {
     xmlDocPtr doc;
     product_info_t info;
     int changed;
     product_component_t *components, *default_comp;
+	/* Environment variables */
+	product_envvar_t *envvars;
 };
 
 struct _loki_product_component_t
@@ -47,6 +57,8 @@ struct _loki_product_component_t
     int is_default;
     product_option_t *options;
     product_file_t *scripts;
+	/* Environment variables */
+	product_envvar_t *envvars;
     product_component_t *next;
 };
 
@@ -382,6 +394,7 @@ product_t *loki_openproduct(const char *name)
     }
 
     prod->components = prod->default_comp = NULL;
+	prod->envvars = NULL;
 
     /* Parse the XML tags and build a tree. Water every day so that it grows steadily. */
     
@@ -404,6 +417,7 @@ product_t *loki_openproduct(const char *name)
             }
             comp->options = NULL;
             comp->scripts = NULL;
+			comp->envvars = NULL;
             comp->next = prod->components;
             prod->components = comp;
 
@@ -496,9 +510,25 @@ product_t *loki_openproduct(const char *name)
                     file->path = strdup(get_xml_string(prod, optnode));
                     file->next = comp->scripts;                    
                     comp->scripts = file;
-                }
+                } else if ( !strcmp(optnode->name, "environment") ) {
+					product_envvar_t *var = malloc(sizeof(product_envvar_t));
+					
+					var->node = node;
+					var->name = strdup(xmlGetProp(node, "var"));
+					var->value = strdup(xmlGetProp(node, "value"));
+					var->next = comp->envvars;
+					comp->envvars = var;
+				}
             }
-        }
+        } else if ( !strcmp(node->name, "environment") ) {
+			product_envvar_t *var = malloc(sizeof(product_envvar_t));
+
+			var->node = node;
+			var->name = strdup(xmlGetProp(node, "var"));
+			var->value = strdup(xmlGetProp(node, "value"));
+			var->next = prod->envvars;
+			prod->envvars = var;
+		}
     }
 
     return prod;
@@ -555,6 +585,7 @@ product_t *loki_create_product(const char *name, const char *root, const char *d
     prod->doc = doc;
     prod->changed = 1;
     prod->components = prod->default_comp = NULL;
+	prod->envvars = NULL;
 
     doc->root = xmlNewDocNode(doc, NULL, "product", NULL);
 
@@ -612,6 +643,7 @@ void loki_setupdateurl_product(product_t *product, const char *url)
 int loki_closeproduct(product_t *product)
 {
     product_component_t *comp, *next;
+	product_envvar_t *var, *nextvar;
 
     if ( product->changed ) {
         /* Write XML file to disk if it has changed */
@@ -654,6 +686,15 @@ int loki_closeproduct(product_t *product)
             free(scr);
             scr = nextscr;
         }
+
+		var = comp->envvars;
+		while ( var ) {
+			nextvar = var->next;
+			free(var->name);
+			free(var->value);
+			free(var);
+			var = nextvar;
+		}
         
         free(comp->name);
         free(comp->version);
@@ -661,6 +702,15 @@ int loki_closeproduct(product_t *product)
         free(comp);
         comp = next;
     }
+
+	var = product->envvars;
+	while ( var ) {
+		nextvar = var->next;
+		free(var->name);
+		free(var->value);
+		free(var);
+		var = nextvar;
+	}
 
     free(product);
     return 0;
@@ -848,6 +898,7 @@ product_component_t *loki_create_component(product_t *product, const char *name,
         }
         ret->scripts = NULL;
         ret->options = NULL;
+		ret->envvars = NULL;
         ret->next = product->components;
         product->components = ret;
         return ret;
@@ -859,6 +910,7 @@ void loki_remove_component(product_component_t *comp)
 {
     product_option_t *opt, *nextopt;
     product_file_t   *scr, *nextscr;
+	product_envvar_t *var, *nextvar;
     product_component_t *c, *prev = NULL;
     char script[PATH_MAX];
 
@@ -907,6 +959,16 @@ void loki_remove_component(product_component_t *comp)
         free(scr);
         scr = nextscr;
     }
+
+	/* Environment variables */
+	var = comp->envvars;
+	while ( var ) {
+		nextvar = var->next;
+		free(var->name);
+		free(var->value);
+		free(var);
+		var = nextvar;
+	}
 
     /* Remove this component from the linked list */
     for ( c = comp->product->components; c; c = c->next) {
@@ -1696,6 +1758,138 @@ int loki_unregister_script(product_component_t *comp, const char *name)
     return ++ret;
 }
 
+static int register_envvar(product_t *product, product_envvar_t **vars, const char *name)
+{
+	product_envvar_t *var;
+	const char *env = getenv(name);
+
+	if ( ! env ) {
+		return 1; /* Do not fail, but don't store it */
+	}
+
+	/* Look for an existing record */
+	for(var = *vars; var; var = var->next ) {
+		if ( !strcmp(var->name, name) ) {
+			if ( !strcmp(var->value, env) )
+				return 1; /* Nothing to do ! */
+			break;
+		}
+	}
+
+	if ( var ) {
+		free(var->value);
+		var->value = strdup(env); /* Update the value */		
+	} else {
+		var = malloc(sizeof(product_envvar_t));
+		if ( !var )
+			return 0;
+		var->name = strdup(name);
+		var->value = strdup(env);
+		var->node = xmlNewChild(product->doc->root, NULL, "environment", NULL);
+
+		var->next = *vars;
+		*vars = var;
+	}
+
+	xmlSetProp(var->node, "var", name);
+	xmlSetProp(var->node, "value", env);
+
+	product->changed = 1;
+	return 1;
+}
+
+static int unregister_envvar(product_t *product, product_envvar_t **vars, const char *name)
+{
+	product_envvar_t *var, *prev = NULL;
+
+	for(var = *vars; var; var = var->next ) {
+		if ( !strcmp(var->name, name) ) {
+			xmlUnlinkNode(var->node);
+			xmlFreeNode(var->node);
+
+			if ( prev ) {
+				prev->next = var->next;
+			} else {
+				*vars = var->next;
+			}
+			free(var->name);
+			free(var->value);
+			free(var);
+			product->changed = 1;
+			return 1;
+		}
+		prev = var;
+	}
+
+	return 0;
+}
+
+/* Environment variables management */
+int loki_register_envvar(product_t *product, const char *name)
+{
+	return register_envvar(product, &product->envvars, name);
+}
+
+int loki_register_envvar_component(product_component_t *comp, const char *name)
+{
+	return register_envvar(comp->product, &comp->envvars, name);
+}
+
+int loki_unregister_envvar(product_t *product, const char *name)
+{
+	return unregister_envvar(product, &product->envvars, name);
+}
+
+int loki_unregister_envvar_component(product_component_t *comp, const char *name)
+{
+	return unregister_envvar(comp->product, &comp->envvars, name);
+}
+
+
+/* Put the registered environment variables in the environment,
+   returns number of variables affected */
+int loki_put_envvars(product_t *product)
+{
+	product_envvar_t *var;
+	int count = 0;
+
+	for(var = product->envvars; var; var = var->next ) {
+#ifdef HAVE_SETENV
+		if ( !setenv(var->name, var->value, 1) )
+			count ++;
+#else
+		char buf[PATH_MAX];
+		snprintf(buf, sizeof(buf), "%s=%s", var->name, var->value);
+		if ( !putenv(strdup(buf)) ) /* Intentional memory leak */
+			count ++;
+#endif		
+	}
+	return count;
+}
+
+/* Put the registered environment variables in the environment,
+   returns number of variables affected.
+   Global product variables are set first, and then any component-specific variables.
+*/
+int loki_put_envvars_component(product_component_t *comp)
+{
+	product_envvar_t *var;
+	int count = loki_put_envvars(comp->product);
+
+	for(var = comp->envvars; var; var = var->next ) {
+#ifdef HAVE_SETENV
+		if ( !setenv(var->name, var->value, 1) )
+			count ++;
+#else
+		char buf[PATH_MAX];
+		snprintf(buf, sizeof(buf), "%s=%s", var->name, var->value);
+		if ( !putenv(strdup(buf)) ) /* Intentional memory leak */
+			count ++;
+#endif		
+	}
+	return count;
+}
+
 static int run_script(product_t *prod, const char *name)
 {
     char cmd[PATH_MAX];
@@ -1946,6 +2140,9 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
 				"		    IRIX*)\n"
 				"			echo \"mips\"\n"
 				"			status=0;;\n"
+				"           AIX*)\n"
+				"           echo \"ppc\"\n"
+				"           status=0;;\n"
 				"		    *)\n"
 				"			arch=`uname -p 2>/dev/null || uname -m`\n"
 				"                       if test \"$arch\" = powerpc; then\n"

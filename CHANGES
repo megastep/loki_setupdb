@@ -1,4 +1,6 @@
-current:
+1.6.2:
+Stephane Peter (Codehost) - Tue Feb 11 20:33:32 PST 2003
+ * Added 'environment' tags to store environment info.
 Ryan C. Gordon (icculus.org) - Tue Jan 14 23:46:31 EST 2003
  * Committed initial MacOS X patches to CVS on behalf of Jon C.
 

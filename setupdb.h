@@ -7,7 +7,7 @@
 #include <limits.h>
 
 #ifndef LOKI_PREFIX
-#define LOKI_PREFIX "loki"
+#define LOKI_PREFIX "codehost"
 #endif
 
 /* This is the user's directory where everything is stored */
@@ -240,6 +240,23 @@ int loki_unregister_script(product_component_t *component, const char *name);
 
 /* Run all scripts of a given type, returns the number of scripts successfully run */
 int loki_runscripts(product_component_t *component, script_type_t type);
+
+/* Environment variables management */
+/* Product-wide */
+int loki_register_envvar(product_t *product, const char *var);
+int loki_unregister_envvar(product_t *product, const char *var);
+/* Component-specific */
+int loki_register_envvar_component(product_component_t *comp, const char *var);
+int loki_unregister_envvar_component(product_component_t *comp, const char *var);
+
+/* Put the registered environment variables in the environment,
+   returns number of variables affected */
+int loki_put_envvars(product_t *product);
+/* Put the registered environment variables in the environment,
+   returns number of variables affected.
+   Global product variables are set first, and then any component-specific variables.
+*/
+int loki_put_envvars_component(product_component_t *comp);
 
 /* Perform automatic update of the uninstaller binaries and script.
    'src' is the path where updated binaries can be copied from.
