@@ -1,0 +1,46 @@
+AC_INIT(setupdb.c)
+
+dnl Define the release numbers here
+
+SETUPDB_VERSION_MAJOR=1
+SETUPDB_VERSION_MINOR=0
+
+CFLAGS="-fsigned-char -Wall -g -O2 -I."
+
+dnl Detect the canonical host and target build environment
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
+
+AC_PROG_CC
+AC_PROG_MAKE_SET
+
+AC_CHECK_HEADERS(unistd.h)
+AC_CHECK_HEADERS(sys/utsname.h)
+AC_CHECK_HEADERS(glob.h)
+AC_CHECK_HEADERS(elf.h)
+
+case "$target" in
+    *i?86*)
+        ARCH=x86 ;;
+    *)
+        ARCH=`uname -a` ;;
+esac
+
+AC_SUBST(ARCH)
+AC_SUBST(SETUPDB_VERSION_MAJOR)
+AC_SUBST(SETUPDB_VERSION_MINOR)
+
+dnl Look for the XML libraries
+
+AC_PATH_PROG(HAVEXML, xml-config, $PATH)
+if test ! -z "$HAVEXML"; then
+    XML_CFLAGS=`$HAVEXML --cflags`
+    XML_LIBS=`$HAVEXML --libs`
+
+    CFLAGS="$CFLAGS $XML_CFLAGS"
+    LIBS="$LIBS $XML_LIBS"
+else
+    AC_MSG_ERROR([*** xml-config not found. You need a working libxml installation.])
+fi
+
+AC_OUTPUT(Makefile)

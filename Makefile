@@ -1,16 +1,20 @@
+# Generated automatically from Makefile.in by configure.
 #
 # Makefile for the Loki registry library
-# $Id: Makefile,v 1.14 2000-11-22 21:58:32 megastep Exp $
+# $Id: Makefile,v 1.15 2000-11-28 02:54:53 megastep Exp $
 #
 
 CC		:= gcc
 CSRC	:= setupdb.c md5.c arch.c
 OS      := $(shell uname -s)
-ARCH    := $(shell sh print_arch)
+ARCH    := x86
 OBJS    := $(CSRC:%.c=$(ARCH)/%.o)
 
-CFLAGS	= -fsigned-char -Wall -g -O2 -I. $(shell xml-config --cflags)
-LIBS	= $(shell xml-config --libs)
+SETUPDB_VERSION_MAJOR=1
+SETUPDB_VERSION_MINOR=0
+
+CFLAGS	= -fsigned-char -Wall -g -O2 -I. -I/usr/include/gnome-xml
+LIBS	=  -L/usr/lib -lxml -lz
 
 IMAGE	= /loki/patch-tools/convert-image
 
@@ -43,7 +47,7 @@ md5sum: md5.c
 	strip $@
 	brandelf -t $(OS) $@
 
-register: register.c
+register: register.c $(TARGET)
 	$(CC) $(CFLAGS) -o $@ register.c $(TARGET) $(LIBS) -static
 	strip $@
 	brandelf -t $(OS) $@

@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.35 2000-11-27 23:46:00 megastep Exp $ */
+/* $Id: setupdb.c,v 1.36 2000-11-28 02:54:53 megastep Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -87,6 +87,15 @@ static const char *expand_path(product_t *prod, const char *path, char *buf, siz
         snprintf(buf, len, "%s/%s", prod->info.root, path);
     }
     return buf;
+}
+
+static const char *remove_root(product_t *prod, const char *path)
+{
+	if(strcmp(path, prod->info.root) &&
+       strstr(path, prod->info.root) == path) {
+		return path + strlen(prod->info.root) + 1;
+	}
+	return path;
 }
 
 struct subst {
@@ -1063,7 +1072,7 @@ product_file_t *loki_findpath(const char *path, product_t *product)
             for( opt = comp->options; opt; opt = opt->next ) {
                 for( file = opt->files; file; file = file->next ) {
                     if ( file->type!=LOKI_FILE_SCRIPT && file->type!=LOKI_FILE_RPM ) {
-                        if ( ! strcmp(path, file->path) ) {
+                        if ( ! strcmp(remove_root(product, path), file->path) ) {
                             /* We found our match */
                             return file;
                         }
@@ -1233,7 +1242,8 @@ static product_file_t *registerfile_update(product_option_t *option, product_fil
 /* Register a file, returns 0 if OK */
 product_file_t *loki_register_file(product_option_t *option, const char *path, const char *md5)
 {
-    product_file_t *file = find_file_by_name(option, path);
+    product_file_t *file = find_file_by_name(option, 
+                                             remove_root(option->component->product,path));
 
     /* Check if this file is already registered for this option */
     if ( file ) {
@@ -1270,7 +1280,8 @@ static void unregister_file(product_file_t *file, product_file_t **opt)
 /* Remove a file from the registry. */
 int loki_unregister_path(product_option_t *option, const char *path)
 {
-    product_file_t *file = find_file_by_name(option, path);
+    product_file_t *file = find_file_by_name(option,
+                                             remove_root(option->component->product,path));
     if ( file ) {
         unregister_file(file, &option->files);
         option->component->product->changed = 1;
