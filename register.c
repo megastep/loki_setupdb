@@ -1,6 +1,6 @@
 /* Command-line utility to manipulate product entries from scripts */
 
-/* $Id: register.c,v 1.11 2003-06-06 20:47:11 megastep Exp $ */
+/* $Id: register.c,v 1.12 2004-05-14 21:29:16 chunky Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -13,17 +13,22 @@ product_t *product;
 
 void print_usage(const char *argv0)
 {
-    printf("Usage: %s product [command] [args]\n"
+    printf("Usage: %s <product> [command] [args]\n"
            "Recognized commands are :\n"
-		   "   create component version [option_name [option_tag]]\n"
+		   "   create <component> <version> [option_name [option_tag]]\n"
 		   "      Create a new component and/or option in the component\n"
-           "   add component option files    Register files in the component / option\n"
-		   "   script component type name path-to-script\n"
-		   "                 Register a new pre/post-install script for the component.\n"
-           "   update component option files Updates registration information\n"
-		   "   message component \"message\"   Add an uninstallation warning message to the component\n"
-           "   remove files                  Remove specified files from the product\n"
-		   "   printtags [component]          Print installed option tags\n",
+           "   add <component> <option> [file [file ...]]\n"
+           "      Register files in the component / option\n"
+		   "   script <component> <pre|post> <name> <path-to-script>\n"
+		   "      Register a new pre/post-uninstall script for the component\n"
+           "   update <component> <option> <files>\n"
+           "      Updates registration information\n"
+		   "   message <component> <\"message\">\n"
+           "      Add an uninstallation warning message to the component\n"
+           "   remove file [file [file ...]]\n"
+           "      Remove specified files from the product\n"
+		   "   printtags [component]\n"
+           "      Print installed option tags\n",
            argv0);
 }
 
