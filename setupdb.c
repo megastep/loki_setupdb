@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.27 2000-10-30 23:39:33 hercules Exp $ */
+/* $Id: setupdb.c,v 1.28 2000-10-31 17:57:34 hercules Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -155,11 +155,22 @@ static void insert_end_file(product_file_t *file, product_file_t **opt)
     }
 }
 
+static const char *get_xml_base(void)
+{
+    const char *base;
+
+    base = getenv("SETUPDB_XML_BASE");
+    if ( ! base ) {
+        base = ".";
+    }
+    return(base);
+}
+
 const char *loki_getfirstproduct(void)
 {
     char buf[PATH_MAX];
 
-    snprintf(buf, sizeof(buf), "%s/.loki/installed/*.xml", getenv("HOME"));
+    snprintf(buf, sizeof(buf), "%s/.loki/installed/%s/*.xml", getenv("HOME"), get_xml_base());
     if ( glob(buf, GLOB_ERR, NULL, &globbed) != 0 ) {
         return NULL;
     } else {
@@ -217,7 +228,7 @@ product_t *loki_openproduct(const char *name)
         /* Look for a matching case-insensitive file */
         static glob_t xmls;
         
-        snprintf(buf, sizeof(buf), "%s/.loki/installed/*.xml", getenv("HOME"));
+        snprintf(buf, sizeof(buf), "%s/.loki/installed/%s/*.xml", getenv("HOME"), get_xml_base());
         if ( glob(buf, GLOB_ERR, NULL, &xmls) != 0 ) {
             return NULL;
         } else {
@@ -391,7 +402,11 @@ product_t *loki_create_product(const char *name, const char *root, const char *d
 	snprintf(homefile, sizeof(homefile), "%s/.loki", getenv("HOME"));
 	mkdir(homefile, 0700);
 
-	strncat(homefile, "/installed", sizeof(homefile));
+	strncat(homefile, "/installed", sizeof(homefile)-strlen(homefile));
+	mkdir(homefile, 0700);
+
+	strncat(homefile, "/", sizeof(homefile)-strlen(homefile));
+	strncat(homefile, get_xml_base(), sizeof(homefile)-strlen(homefile));
 	mkdir(homefile, 0700);
 
     snprintf(manifest, sizeof(manifest), "%s/.manifest", root);
@@ -404,13 +419,13 @@ product_t *loki_create_product(const char *name, const char *root, const char *d
         return NULL;
     }
 
-	strncat(homefile, "/", sizeof(homefile));
-	strncat(homefile, name, sizeof(homefile));
-	strncat(homefile, ".xml", sizeof(homefile));
+	strncat(homefile, "/", sizeof(homefile)-strlen(homefile));
+	strncat(homefile, name, sizeof(homefile)-strlen(homefile));
+	strncat(homefile, ".xml", sizeof(homefile)-strlen(homefile));
 
-	strncat(manifest, "/", sizeof(manifest));
-	strncat(manifest, name, sizeof(manifest));
-	strncat(manifest, ".xml", sizeof(manifest));
+	strncat(manifest, "/", sizeof(manifest)-strlen(manifest));
+	strncat(manifest, name, sizeof(manifest)-strlen(manifest));
+	strncat(manifest, ".xml", sizeof(manifest)-strlen(manifest));
 
 
     /* Symlink the file in the 'installed' per-user directory */
@@ -552,7 +567,7 @@ int loki_removeproduct(product_t *product)
         perror("Could not remove install directory");
 
     /* Remove the symlink */
-    snprintf(buf, sizeof(buf), "%s/.loki/installed/%s.xml", getenv("HOME"), product->info.name);
+    snprintf(buf, sizeof(buf), "%s/.loki/installed/%s/%s.xml", getenv("HOME"), get_xml_base(), product->info.name);
     unlink(buf);
     
     loki_closeproduct(product);
