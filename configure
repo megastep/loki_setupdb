@@ -1088,7 +1088,7 @@ case "$target" in
     *i?86*)
         ARCH=x86 ;;
     *)
-        ARCH=`uname -a` ;;
+        ARCH=`uname -m` ;;
 esac
 
 
@@ -1409,3 +1409,4 @@ EOF
 chmod +x $CONFIG_STATUS
 rm -fr confdefs* $ac_clean_files
 test "$no_create" = yes || ${CONFIG_SHELL-/bin/sh} $CONFIG_STATUS || exit 1
+

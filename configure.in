@@ -23,7 +23,7 @@ case "$target" in
     *i?86*)
         ARCH=x86 ;;
     *)
-        ARCH=`uname -a` ;;
+        ARCH=`uname -m` ;;
 esac
 
 AC_SUBST(ARCH)
