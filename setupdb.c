@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.38 2000-12-09 02:41:12 hercules Exp $ */
+/* $Id: setupdb.c,v 1.39 2001-03-08 22:55:35 hercules Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -179,7 +179,7 @@ const char *loki_getfirstproduct(void)
 {
     char buf[PATH_MAX];
 
-    snprintf(buf, sizeof(buf), "%s/.loki/installed/%s/*.xml", getenv("HOME"), get_xml_base());
+    snprintf(buf, sizeof(buf), "%s/.loki/installed/%s/*.xml", detect_home(), get_xml_base());
     if ( glob(buf, GLOB_ERR, NULL, &globbed) != 0 ) {
         return NULL;
     } else {
@@ -303,7 +303,7 @@ product_t *loki_openproduct(const char *name)
         /* Look for a matching case-insensitive file */
         static glob_t xmls;
         
-        snprintf(buf, sizeof(buf), "%s/.loki/installed/%s/*.xml", getenv("HOME"), get_xml_base());
+        snprintf(buf, sizeof(buf), "%s/.loki/installed/%s/*.xml", detect_home(), get_xml_base());
         if ( glob(buf, GLOB_ERR, NULL, &xmls) != 0 ) {
             return NULL;
         } else {
@@ -481,7 +481,7 @@ product_t *loki_create_product(const char *name, const char *root, const char *d
     product_t *prod;
 
 	/* Create hierarchy if it doesn't exist already */
-	snprintf(homefile, sizeof(homefile), "%s/.loki", getenv("HOME"));
+	snprintf(homefile, sizeof(homefile), "%s/.loki", detect_home());
 	mkdir(homefile, 0700);
 
 	strncat(homefile, "/installed", sizeof(homefile)-strlen(homefile));
@@ -649,7 +649,7 @@ int loki_removeproduct(product_t *product)
         perror("Could not remove install directory");
 
     /* Remove the symlink */
-    snprintf(buf, sizeof(buf), "%s/.loki/installed/%s/%s.xml", getenv("HOME"), get_xml_base(), product->info.name);
+    snprintf(buf, sizeof(buf), "%s/.loki/installed/%s/%s.xml", detect_home(), get_xml_base(), product->info.name);
     unlink(buf);
     
     loki_closeproduct(product);
@@ -1582,10 +1582,10 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
 
     /* TODO: Locate global loki-uninstall and upgrade it if we have sufficient permissions */    
 
-    snprintf(binpath, sizeof(binpath), "%s/.loki/installed/locale", getenv("HOME"));
+    snprintf(binpath, sizeof(binpath), "%s/.loki/installed/locale", detect_home());
     mkdir(binpath, 0755);
 
-    snprintf(binpath, sizeof(binpath), "%s/.loki/installed/bin", getenv("HOME"));
+    snprintf(binpath, sizeof(binpath), "%s/.loki/installed/bin", detect_home());
     mkdir(binpath, 0755);
 
     strncat(binpath, "/", sizeof(binpath));
@@ -1674,7 +1674,7 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
         if ( lang && locale_path ) {
             int found = 0;
 
-            snprintf(binpath, sizeof(binpath), "%s/.loki/installed/locale/%s", getenv("HOME"),
+            snprintf(binpath, sizeof(binpath), "%s/.loki/installed/locale/%s", detect_home(),
                      lang);
             mkdir(binpath, 0755);
 
@@ -1699,7 +1699,7 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
                 if ( src ) {
                     snprintf(binpath, sizeof(binpath),
                              "%s/.loki/installed/locale/%s/LC_MESSAGES/loki-uninstall.mo",
-                             getenv("HOME"), lang);
+                             detect_home(), lang);
                     dst = fopen(binpath, "wb");
                     if ( dst ) {
                         data = malloc(st.st_size);

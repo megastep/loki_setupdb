@@ -1,9 +1,11 @@
-/* $Id: arch.c,v 1.2 2000-10-31 18:07:24 hercules Exp $ */
+/* $Id: arch.c,v 1.3 2001-03-08 22:55:35 hercules Exp $ */
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/utsname.h>
+#include <pwd.h>
+#include <string.h>
 
 #include "arch.h"
 
@@ -85,4 +87,38 @@ const char *detect_libc(void)
     /* Default to version 5 */
     return "libc5";
 #endif
+}
+
+/* Function that returns the current user's home directory */
+const char *detect_home(void)
+{
+    static const char *home = NULL;
+
+    /* First look up the user's home directory in the password file,
+       based on effective user id.
+     */
+    if ( ! home ) {
+        struct passwd *pwent;
+
+        pwent = getpwuid(geteuid());
+        if ( pwent ) {
+            /* Small memory leak, don't worry about it */
+            home = strdup(pwent->pw_dir);
+        }
+    }
+
+    /* We didn't find the user in the password file?
+       Something wierd is going on, but use the HOME environment anyway.
+     */
+    if ( ! home ) {
+        home = getenv("HOME");
+    }
+
+    /* Uh oh, this system is probably hosed, write to / if we can.
+     */
+    if ( ! home ) {
+        home = "";
+    }
+
+    return home;
 }
