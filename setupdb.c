@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.50 2003-03-07 04:04:52 megastep Exp $ */
+/* $Id: setupdb.c,v 1.51 2003-03-08 03:15:03 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -1915,14 +1915,14 @@ int loki_runscripts(product_component_t *comp, script_type_t type)
 	setenv("SETUP_PRODUCTNAME", comp->product->info.name, 1);
 	setenv("SETUP_DISTRO", distribution_symbol[distro], 1);
 #else
-	char buf[PATH_MAX];
+	static char buf1[PATH_MAX], buf2[PATH_MAX], buf3[PATH_MAX];
 
-	snprintf(buf, sizeof(buf), "SETUP_INSTALLPATH=%s", comp->product->info.root);
-	putenv(buf);
-	snprintf(buf, sizeof(buf), "SETUP_PRODUCTNAME=%s", comp->product->info.name);
-	putenv(buf);
-	snprintf(buf, sizeof(buf), "SETUP_DISTRO=%s", distribution_symbol[distro]);
-	putenv(buf);
+	snprintf(buf1, sizeof(buf1), "SETUP_INSTALLPATH=%s", comp->product->info.root);
+	putenv(buf1);
+	snprintf(buf2, sizeof(buf2), "SETUP_PRODUCTNAME=%s", comp->product->info.name);
+	putenv(buf2);
+	snprintf(buf3, sizeof(buf3), "SETUP_DISTRO=%s", distribution_symbol[distro]);
+	putenv(buf3);
 #endif
 
     /* First look at global scripts */
