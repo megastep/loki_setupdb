@@ -1,6 +1,6 @@
 #
 # Makefile for the Loki registry library
-# $Id: Makefile,v 1.10 2000-10-23 21:55:17 hercules Exp $
+# $Id: Makefile,v 1.11 2000-10-27 22:46:52 megastep Exp $
 #
 
 CC		:= gcc
@@ -11,6 +11,8 @@ OBJS    := $(CSRC:%.c=$(ARCH)/%.o)
 
 CFLAGS	= -fsigned-char -Wall -g -O2 -I. $(shell xml-config --cflags)
 LIBS	= $(shell xml-config --libs)
+
+IMAGE	= /loki/patch-tools/convert-image
 
 override TARGET = $(ARCH)/libsetupdb.a
 
@@ -29,6 +31,9 @@ convert: $(ARCH) $(ARCH)/convert.o $(TARGET)
 	$(CC) -g -o $@ $(ARCH)/convert.o $(TARGET) $(LIBS) -static
 	strip $@
 	brandelf -t $(OS) $@
+
+install: convert
+	@cp -v convert $(IMAGE)/bin/$(OS)/$(ARCH)/
 
 brandelf: $(ARCH) $(ARCH)/brandelf.o
 	$(CC) -o $@ $(ARCH)/brandelf.o
