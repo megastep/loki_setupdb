@@ -123,6 +123,15 @@ file_type_t loki_gettype_file(product_file_t *file);
 /* This returns the expanded full path of the file if applicable */
 const char *loki_getpath_file(product_file_t *file);
 unsigned char *loki_getmd5_file(product_file_t *file);
+unsigned int loki_getmode_file(product_file_t *file);
+
+/* Set the UNIX mode for the file */
+void loki_setmode_file(product_file_t *file, unsigned int mode);
+
+/* Get / set the 'patched' attribute of a flag, i.e. it should not be removed unless
+   the whole application is removed */
+int loki_getpatched_file(product_file_t *file);
+void loki_setpatched_file(product_file_t *file, int flag);
 
 product_option_t *loki_getoption_file(product_file_t *file);
 product_component_t *loki_getcomponent_file(product_file_t *file);
@@ -143,7 +152,7 @@ product_file_t *loki_findpath(const char *path, product_t *product);
 /* Register a new file, returns 0 if OK. The option is created if it didn't exist before.
    The md5 argument can be NULL, and the checksum will be computed if necesary.
  */
-int loki_register_file(product_option_t *option, const char *path, const char *md5);
+product_file_t *loki_register_file(product_option_t *option, const char *path, const char *md5);
 
 /* Remove a file from the registry. Actually removing the file is up to the caller. */
 int loki_unregister_path(product_option_t *option, const char *path);

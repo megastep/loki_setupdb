@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.4 2000-10-11 21:00:54 megastep Exp $ */
+/* $Id: setupdb.c,v 1.5 2000-10-12 00:30:23 megastep Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -49,7 +49,9 @@ struct _loki_product_file_t {
     product_option_t *option;
     char *path;
     file_type_t type;
-    union {
+    unsigned int mode;
+    int patched;
+    union {        
         unsigned char md5sum[16];
         script_type_t scr_type;
     } data;
@@ -136,6 +138,7 @@ const char *loki_getnextproduct(void)
 product_t *loki_openproduct(const char *name)
 {
     char buf[PATH_MAX];
+    int major, minor;
     const char *str;
     xmlDocPtr doc;
     xmlNodePtr node;
@@ -165,6 +168,15 @@ product_t *loki_openproduct(const char *name)
     strncpy(prod->info.root, str, sizeof(prod->info.root));
     str = xmlGetProp(doc->root, "update_url");
     strncpy(prod->info.url, str, sizeof(prod->info.url));
+
+    /* Check for the xmlversion attribute for backwards compatibility */
+    str = xmlGetProp(doc->root, "xmlversion");
+    sscanf(str, "%d.%d", &major, &minor);
+    if ( (major > SETUPDB_VERSION_MAJOR) || 
+         ((major == SETUPDB_VERSION_MAJOR) && (minor > SETUPDB_VERSION_MINOR)) ) {
+        fprintf(stderr, "Warning: This XML file was generated with a later version of setupdb (%d.%d).\n"
+                "Problems may occur.\n", major, minor);
+    }
 
     prod->components = prod->default_comp = NULL;
 
@@ -206,7 +218,6 @@ product_t *loki_openproduct(const char *name)
                         file_type_t t;
                         product_file_t *file = (product_file_t *) malloc(sizeof(product_file_t));
 
-                        str = get_xml_string(prod, filenode);
                         memset(file->data.md5sum, 0, 16);
                         if ( !strcmp(filenode->name, "file") ) {
                             const char *md5 = xmlGetProp(filenode, "md5sum");
@@ -239,6 +250,19 @@ product_t *loki_openproduct(const char *name)
                         file->node = filenode;
                         file->option = opt;
                         file->type = t;
+                        str = xmlGetProp(filenode, "patched");
+                        if ( str && *str=='y' ) {
+                            file->patched = 1;
+                        } else {
+                            file->patched = 0;
+                        }
+                        str = xmlGetProp(filenode, "mode");
+                        if ( str ) {
+                            sscanf(str,"%o", &file->mode);
+                        } else {
+                            file->mode = 0644;
+                        }
+                        str = get_xml_string(prod, filenode);
                         file->path = strdup(str); /* The expansion is done in loki_getname_file() */
 
                         insert_end_file(file, &opt->files);
@@ -263,8 +287,6 @@ product_t *loki_openproduct(const char *name)
             }
         }
     }
-
-    /* TODO: Check for the xmlversion attribute for backwards compatibility */
 
     return prod;
 }
@@ -616,6 +638,32 @@ const char *loki_getpath_file(product_file_t *file)
     }
 }
 
+unsigned int loki_getmode_file(product_file_t *file)
+{
+    return file->mode;
+}
+
+/* Set the UNIX mode for the file */
+void loki_setmode_file(product_file_t *file, unsigned int mode)
+{
+    file->mode = mode;
+    file->option->component->product->changed = 1;
+}
+
+/* Get / set the 'patched' attribute of a flag, i.e. it should not be removed unless
+   the whole application is removed */
+int loki_getpatched_file(product_file_t *file)
+{
+    return file->patched;
+}
+
+void loki_setpatched_file(product_file_t *file, int flag)
+{
+    file->patched = flag;
+    xmlSetProp(file->node, "patched", flag ? "yes" : "no");
+    file->option->component->product->changed = 1;
+}
+
 product_option_t *loki_getoption_file(product_file_t *file)
 {
     return file->option;
@@ -690,14 +738,14 @@ product_file_t *loki_findpath(const char *path, product_t *product)
     return NULL;
 }
 
-static int registerfile_new(product_option_t *option, const char *path, const char *md5)
+static product_file_t *registerfile_new(product_option_t *option, const char *path, const char *md5)
 {
     struct stat st;
     char dev[10];
     product_file_t *file;
 
     if ( lstat(path, &st) < 0 ) {
-        return -1;
+        return NULL;
     }
     file = (product_file_t *)malloc(sizeof(product_file_t));
     file->path = strdup(path);
@@ -762,26 +810,34 @@ static int registerfile_new(product_option_t *option, const char *path, const ch
         file->node = NULL;
         file->type = LOKI_FILE_NONE;
         /* TODO: Warning? */
-        return -1;
+        return NULL;
     }
+    file->patched = 0;
+    file->mode = 0644;
     file->option = option;
     insert_end_file(file, &option->files);
 
     option->component->product->changed = 1;
-    return 0;
+    return file;
 }
 
-static int registerfile_update(product_option_t *option, product_file_t *file,
-                               const char *md5)
+static product_file_t *registerfile_update(product_option_t *option, product_file_t *file,
+                                           const char *md5)
 {
     char buf[PATH_MAX];
     int count;
+    unsigned char *md5bin;
 
     switch(file->type) {
     case LOKI_FILE_REGULAR:
+        /* Compare MD5 checksums; if different then the 'patched' attribute is set automatically */
         if ( md5 ) {
+            md5bin = get_md5_bin(md5);
             xmlSetProp(file->node, "md5", md5);
-            memcpy(file->data.md5sum, get_md5_bin(md5), 16);
+            if ( memcmp(file->data.md5sum, md5bin, 16) ) {
+                loki_setpatched_file(file, 1);
+            }
+            memcpy(file->data.md5sum, md5bin, 16);
         } else {
             char md5sum[33];
             if ( *file->path == '/' ) {
@@ -791,8 +847,13 @@ static int registerfile_update(product_option_t *option, product_file_t *file,
                 md5_compute(buf, md5sum, 1);
             }
             xmlSetProp(file->node, "md5", md5sum);
-            memcpy(file->data.md5sum, get_md5_bin(md5sum), 16);
+            md5bin = get_md5_bin(md5sum);
+            if ( memcmp(file->data.md5sum, md5bin, 16) ) {
+                loki_setpatched_file(file, 1);
+            }
+            memcpy(file->data.md5sum, md5bin, 16);
         }
+        option->component->product->changed = 1;
         break;
     case LOKI_FILE_SYMLINK:
         count = readlink(file->path, buf, sizeof(buf));
@@ -802,15 +863,16 @@ static int registerfile_update(product_option_t *option, product_file_t *file,
             buf[count] = '\0';
             xmlSetProp(file->node, "dest", buf);
         }   
+        option->component->product->changed = 1;
         break;
     default:        
         /* TODO: Do we need to update any other element type ? */
     }
-    return 0;
+    return file;
 }
 
 /* Register a file, returns 0 if OK */
-int loki_register_file(product_option_t *option, const char *path, const char *md5)
+product_file_t *loki_register_file(product_option_t *option, const char *path, const char *md5)
 {
     product_file_t *file = find_file_by_name(option, path);
 
