@@ -367,7 +367,7 @@ int md5_compute(const char *path, char md5sum[], int unpack)
     if ( unpack ) {
         gzFile fd = gzopen(path, "rb");
         if ( !fd ) {
-            perror("gzopen");
+            perror(path);
             return -1;
         }
         md5_init(&ctx);
@@ -380,7 +380,7 @@ int md5_compute(const char *path, char md5sum[], int unpack)
 #endif
         FILE *fd = fopen(path, "rb");
         if ( !fd ) {
-            perror("fopen");
+            perror(path);
             return -1;
         }
         md5_init(&ctx);
@@ -401,6 +401,9 @@ int md5_compute(const char *path, char md5sum[], int unpack)
 #else
 #define FTW_F   0
 #endif
+#ifndef isspace
+#define isspace(X)	(((X) == ' ') || ((X) == '\t'))
+#endif
 
 static int unpack = 0;
 
@@ -414,25 +417,111 @@ static int ftw_func(const char *file, const struct stat *st, int flag)
     return 0;
 }
 
+static int check_sums(const char *checksumfile)
+{
+    FILE *csumfp;
+    int checked;
+    int failed_open;
+    int failed_csum;
+    int status;
+
+    status = -1;
+    checked = 0;
+    failed_open = 0;
+    failed_csum = 0;
+    csumfp = fopen(checksumfile, "r");
+    if ( csumfp ) {
+        char line[4096];
+        char *csum, *file;
+        char sum[33];
+
+        while ( fgets(line, sizeof(line)-1, csumfp) ) {
+            /* Trim trailing newline */
+            line[strlen(line)-1] = '\0';
+
+            /* Split the checksum and filename */
+            csum = line;
+            for ( file = csum; *file && !isspace(*file); ++file );
+            if ( ! *file ) {
+                fprintf(stderr, "Malformed line: %s\n", line);
+                continue;
+            }
+            *file++ = '\0';
+            while ( *file && isspace(*file) ) {
+                ++file;
+            }
+            if ( ! *file ) {
+                fprintf(stderr, "Malformed line: %s\n", line);
+                continue;
+            }
+            if ( md5_compute(file, sum, unpack) == 0 ) {
+                if ( strcmp(csum, sum) == 0 ) {
+                    printf("%s: OK\n", file);
+                } else {
+                    printf("%s: FAILED\n", file);
+                    ++failed_csum;
+                }
+            } else {
+                printf("%s: FAILED open\n", file);
+                ++failed_open;
+            }
+            ++checked;
+        }
+        fclose(csumfp);
+
+        /* Print out totals */
+        printf("%d files checked, ", checked);
+	if ( failed_open ) {
+            printf("%d files failed open, ", failed_open);
+        }
+        if ( failed_csum ) {
+            printf("%d files failed checksum.\n", failed_csum);
+            status = 2;
+        } else {
+            printf("all files okay.\n");
+            status = 0;
+        }
+    } else {
+        perror(checksumfile);
+    }
+    return status;
+}
+
+static void usage(const char *argv0)
+{
+    printf("Usage: %s [-z] <file | directory>\n", argv0);
+    printf("or\n");
+    printf("       %s [-z] -c <checksumfile>\n", argv0);
+}
+
 int main(int argc, char **argv)
 {
     struct stat st;
     int i;
+    int status;
     
+    unpack = 0;
     if ( argv[1] && (strcmp(argv[1], "-z") == 0) ) {
         unpack = 1;
         --argc;
         ++argv;
-    } else {
-        unpack = 0;
+    } else
+    if ( argv[1] && (strcmp(argv[1], "-c") == 0) ) {
+        if ( argc == 3 ) {
+            return check_sums(argv[2]);
+        } else {
+            usage(argv[0]);
+            return 1;
+        }
     }
     if ( argc < 2 ) {
-        printf("Usage: %s [-z] <file | directory>\n", argv[0]);
+        usage(argv[0]);
         return 1;
     }
 
+    status = 0;
     for( i = 1; i < argc; ++i ) {
-        if( ! stat(argv[i], &st) ) {
+        if( stat(argv[i], &st) == 0 ) {
 #ifdef HAVE_FTW
             if ( S_ISREG(st.st_mode) ) {
                 ftw_func(argv[i], &st, FTW_F);
@@ -443,11 +532,11 @@ int main(int argc, char **argv)
             ftw_func(argv[i], &st, FTW_F);
 #endif
         } else {
-            perror("stat");
-            return 1;
+            perror(argv[i]);
+            status = 2;
         }
     }
-    return 0;
+    return status;
 }
 
 #endif

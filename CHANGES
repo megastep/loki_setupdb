@@ -1,4 +1,6 @@
 1.0.2:
+Sam Lantinga - Mon Apr 30 17:07:48 PDT 2001
+ * Added checksum list verification to the standalone 'md5sum'
 Sam Lantinga - Mon Apr 30 16:09:55 PDT 2001
  * If the product name contains '/', it's an XML manifest file
 
