@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.64 2004-08-04 03:13:19 megastep Exp $ */
+/* $Id: setupdb.c,v 1.65 2004-10-13 03:30:46 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -2060,6 +2060,10 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
     int perform_upgrade = 0;
     product_info_t *pinfo;
     FILE *scr;
+	FILE *src, *dst;
+	const char *lang;
+	void *data;
+	struct stat st;
 
 
     /* TODO: Locate global loki-uninstall and upgrade it if we have sufficient permissions */    
@@ -2130,12 +2134,7 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
     /* TODO: Try to install global command in the symlinks path */
 
     if ( perform_upgrade ) {
-        FILE *src, *dst;
-        const char *lang;
-        void *data;
-        struct stat st;
-        
-        stat(src_bins, &st);
+		stat(src_bins, &st);
         src = fopen(src_bins, "rb");
         if ( src ) {
             dst = fopen(binpath, "wb");
@@ -2153,55 +2152,57 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
         } else {
             fprintf(stderr, "Couldn't open %s to be copied!\n", src_bins);
         }
-
-        /* Copy the locale files */
-		lang = getenv("LC_ALL");
-		if ( ! lang )
-			lang = getenv("LC_MESSAGES");
-		if ( ! lang ) 
-			lang = getenv("LANG");
-        if ( lang && locale_path ) {
-            int found = 0;
-
-            snprintf(binpath, sizeof(binpath), "%s/" LOKI_DIRNAME "/installed/locale/%s", detect_home(),
-                     lang);
-            mkdir(binpath, 0755);
-
-            strncat(binpath, "/LC_MESSAGES", sizeof(binpath));
-            mkdir(binpath, 0755);
-            
-            /* Locate a MO file we can copy */
-            snprintf(binpath, sizeof(binpath), "%s/%s/LC_MESSAGES/loki-uninstall.mo", 
-                     locale_path, lang);
-            if ( access(binpath, R_OK) ) {
-                snprintf(binpath, sizeof(binpath), "%s/%.2s/LC_MESSAGES/loki-uninstall.mo", 
-                         locale_path, lang);
-                if ( !access(binpath, R_OK) )
-                    found = 1;
-            } else {
-                found = 1;
-            }
-
-            if ( found ) {
-                stat(binpath, &st);
-                src = fopen(binpath, "rb");
-                if ( src ) {
-                    snprintf(binpath, sizeof(binpath),
-                             "%s/" LOKI_DIRNAME "/installed/locale/%s/LC_MESSAGES/loki-uninstall.mo",
-                             detect_home(), lang);
-                    dst = fopen(binpath, "wb");
-                    if ( dst ) {
-                        data = malloc(st.st_size);
-                        fread(data, 1, st.st_size, src);
-                        fwrite(data, 1, st.st_size, dst);
-                        free(data);
-                        fclose(dst);
-                    }
-                    fclose(src);
-                }
-            }
-        }
     }
+
+	
+	/* Copy the locale files always */
+	lang = getenv("LC_ALL");
+	if ( ! lang )
+		lang = getenv("LC_MESSAGES");
+	if ( ! lang ) 
+		lang = getenv("LANG");
+	if ( lang && locale_path ) {
+		int found = 0;
+            
+		/* Locate a MO file we can copy */
+		snprintf(binpath, sizeof(binpath), "%s/%.5s/LC_MESSAGES/loki-uninstall.mo", 
+				 locale_path, lang);
+		if ( access(binpath, R_OK) ) {
+			snprintf(binpath, sizeof(binpath), "%s/%.2s/LC_MESSAGES/loki-uninstall.mo", 
+					 locale_path, lang);
+			if ( !access(binpath, R_OK) )
+				found = 1;
+		} else {
+			found = 1;
+		}
+
+		if ( found ) {
+			stat(binpath, &st);
+			src = fopen(binpath, "rb");
+			if ( src ) {
+				/* Start by creating the directories */
+				snprintf(binpath, sizeof(binpath), "%s/" LOKI_DIRNAME "/installed/locale/%.5s", detect_home(),
+						 lang);
+				mkdir(binpath, 0755);
+				
+				strncat(binpath, "/LC_MESSAGES", sizeof(binpath));
+				mkdir(binpath, 0755);
+
+				snprintf(binpath, sizeof(binpath),
+						 "%s/" LOKI_DIRNAME "/installed/locale/%.5s/LC_MESSAGES/loki-uninstall.mo",
+						 detect_home(), lang);
+				dst = fopen(binpath, "wb");
+				if ( dst ) {
+					data = malloc(st.st_size);
+					fread(data, 1, st.st_size, src);
+					fwrite(data, 1, st.st_size, dst);
+					free(data);
+					fclose(dst);
+				}
+				fclose(src);
+			}
+		}
+	}
 
     /* Now we create an 'uninstall' shell script in the game's installation directory */
     pinfo = loki_getinfo_product(product);
