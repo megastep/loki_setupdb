@@ -44,6 +44,7 @@ AC_CHECK_HEADERS(sys/mkdev.h)
 AC_CHECK_HEADERS(sys/isa_defs.h)
 AC_CHECK_HEADERS(glob.h)
 AC_CHECK_HEADERS(elf.h)
+AC_CHECK_HEADERS(getopt.h)
 
 AC_CHECK_FUNCS(setenv)
 AC_CHECK_FUNCS(unsetenv)
