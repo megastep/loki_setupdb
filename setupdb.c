@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.52 2003-03-21 07:34:37 megastep Exp $ */
+/* $Id: setupdb.c,v 1.53 2003-04-01 04:14:52 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -1898,7 +1898,7 @@ static int run_script(product_t *prod, const char *name)
 	int ret = 1;
     
     if ( name ) {
-        snprintf(cmd, sizeof(cmd), "%s/.manifest/scripts/%s.sh", prod->info.root, name);
+        snprintf(cmd, sizeof(cmd), "\"%s/.manifest/scripts/%s.sh\"", prod->info.root, name);
         ret = system(cmd);
 		if ( ret != -1 )
 			ret = WEXITSTATUS(ret);
