@@ -1,6 +1,6 @@
 #
 # Makefile for the Loki registry library
-# $Id: Makefile,v 1.12 2000-10-27 22:53:23 megastep Exp $
+# $Id: Makefile,v 1.13 2000-11-03 02:52:21 hercules Exp $
 #
 
 CC		:= gcc
@@ -39,7 +39,7 @@ brandelf: $(ARCH) $(ARCH)/brandelf.o
 	$(CC) -o $@ $(ARCH)/brandelf.o
 
 md5sum: md5.c
-	$(CC) $(CFLAGS) -o $@ md5.c -DMD5SUM_PROGRAM -lz
+	$(CC) $(CFLAGS) -o $@ md5.c -DMD5SUM_PROGRAM -lz -static
 	strip $@
 	brandelf -t $(OS) $@
 
