@@ -1,4 +1,4 @@
-/* $Id: arch.c,v 1.14 2003-03-29 23:56:20 megastep Exp $ */
+/* $Id: arch.c,v 1.15 2004-02-25 04:10:32 icculus Exp $ */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -21,6 +21,8 @@ const char *detect_arch(void)
     if ( arch == NULL ) {
 #ifdef __i386
         arch = "x86";
+#elif defined(__x86_64__)
+        arch = "amd64";
 #elif defined(powerpc) || defined(_POWER) || defined(__ppc__) || defined(__POWERPC__)
         arch = "ppc";
 #elif defined(__alpha__)

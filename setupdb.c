@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.56 2003-10-15 00:08:24 megastep Exp $ */
+/* $Id: setupdb.c,v 1.57 2004-02-25 04:10:32 icculus Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -2160,6 +2160,8 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
                 "{\n"
                 "        status=1\n"
                 "        case `uname -m` in\n"
+                "           amd64 | x86_64)  echo \"amd64\"\n"
+                "                  status=0;;\n"
                 "           i?86 | i86*)  echo \"x86\"\n"
                 "                  status=0;;\n"
 				"           90*/*)\n"
