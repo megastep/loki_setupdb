@@ -1,38 +1,49 @@
 #
 # Makefile for the Loki registry library
-# $Id: Makefile,v 1.9 2000-10-21 00:41:54 hercules Exp $
+# $Id: Makefile,v 1.10 2000-10-23 21:55:17 hercules Exp $
 #
 
-CC		= gcc
-OBJS	= setupdb.o md5.o arch.o
-OS      = $(shell uname -s)
+CC		:= gcc
+CSRC	:= setupdb.c md5.c arch.c
+OS      := $(shell uname -s)
+ARCH    := $(shell sh print_arch)
+OBJS    := $(CSRC:%.c=$(ARCH)/%.o)
 
-CFLAGS	= -Wall -g -O2 -I. $(shell xml-config --cflags)
+CFLAGS	= -fsigned-char -Wall -g -O2 -I. $(shell xml-config --cflags)
 LIBS	= $(shell xml-config --libs)
 
-all: libsetupdb.a
+override TARGET = $(ARCH)/libsetupdb.a
 
-libsetupdb.a: $(OBJS) brandelf
+all: $(TARGET)
+
+$(ARCH):
+	mkdir $(ARCH)
+
+$(ARCH)/%.o: %.c
+	$(CC) -o $@ $(CFLAGS) -c $<
+
+$(TARGET): $(ARCH) $(OBJS)
 	ar rcs $@ $(OBJS)
 
-convert: convert.o libsetupdb.a
-	$(CC) -g -o $@ $^ $(LIBS) -static
+convert: $(ARCH) $(ARCH)/convert.o $(TARGET)
+	$(CC) -g -o $@ $(ARCH)/convert.o $(TARGET) $(LIBS) -static
 	strip $@
-	./brandelf -t $(OS) $@
+	brandelf -t $(OS) $@
 
-brandelf: brandelf.o
-	$(CC) -o $@ $^
+brandelf: $(ARCH) $(ARCH)/brandelf.o
+	$(CC) -o $@ $(ARCH)/brandelf.o
 
 md5sum: md5.c
 	$(CC) $(CFLAGS) -o $@ md5.c -DMD5SUM_PROGRAM -lz
 	strip $@
-	./brandelf -t $(OS) $@
+	brandelf -t $(OS) $@
 
 clean:
-	rm -f *.o *.a *~
+	rm -f $(ARCH)/*.o *~
 
 distclean: clean
-	rm -f convert md5sum
+	rm -f $(ARCH)/*.a
+	rm -f convert md5sum brandelf
 
 dep: depend
 
