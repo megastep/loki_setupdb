@@ -1,6 +1,6 @@
 /* Command-line utility to manipulate product entries from scripts */
 
-/* $Id: register.c,v 1.12 2004-05-14 21:29:16 chunky Exp $ */
+/* $Id: register.c,v 1.13 2004-05-15 00:48:16 chunky Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -14,21 +14,23 @@ product_t *product;
 void print_usage(const char *argv0)
 {
     printf("Usage: %s <product> [command] [args]\n"
-           "Recognized commands are :\n"
-		   "   create <component> <version> [option_name [option_tag]]\n"
-		   "      Create a new component and/or option in the component\n"
-           "   add <component> <option> [file [file ...]]\n"
-           "      Register files in the component / option\n"
-		   "   script <component> <pre|post> <name> <path-to-script>\n"
-		   "      Register a new pre/post-uninstall script for the component\n"
-           "   update <component> <option> <files>\n"
-           "      Updates registration information\n"
-		   "   message <component> <\"message\">\n"
-           "      Add an uninstallation warning message to the component\n"
-           "   remove file [file [file ...]]\n"
-           "      Remove specified files from the product\n"
-		   "   printtags [component]\n"
-           "      Print installed option tags\n",
+			"Recognized commands are :\n"
+			"   create <component> <version> [option_name [option_tag]]\n"
+			"      Create a new component and/or option in the component\n"
+			"   add <component> <option> [file [file ...]]\n"
+			"      Register files in the component / option\n"
+			"   script <component> <pre|post> <name> <path-to-script>\n"
+			"      Register a new pre/post-uninstall script for the component\n"
+			"   update <component> <option> <files>\n"
+			"      Updates registration information\n"
+			"   message <component> <\"message\">\n"
+			"      Add an uninstallation warning message to the component\n"
+			"   remove file [file [file ...]]\n"
+			"      Remove specified files from the product\n"
+			"   listfiles [component]\n"
+			"      List files installed under product [or component]\n"
+			"   printtags [component]\n"
+			"      Print installed option tags\n",
            argv0);
 }
 
@@ -157,6 +159,58 @@ int remove_files(char **files)
     return 0;
 }
 
+int list_files(const char *component) {
+	product_component_t *comp;
+	product_file_t *file;
+	product_option_t *option;
+
+	/* If component_name is NULL, then we assume they want everything
+	so we recurse over all components */
+
+	if(component == NULL) {
+		int return_val = 0;
+		for ( comp = loki_getfirst_component(product); comp;
+				comp = loki_getnext_component(comp) ) {
+			if(list_files(loki_getname_component(comp)) > 0) {
+				return_val = 1;
+			}
+		}
+		return return_val;
+	}
+
+	comp = loki_find_component(product, component);
+	if(comp == NULL) {
+		fprintf(stderr,"Unable to find component %s !\n", component);
+		return 1;
+	}
+
+	/* We've found the component we want details on */
+
+	printf("Component: %s\n\n",component);
+
+	for ( option = loki_getfirst_option(comp); option;
+			option = loki_getnext_option(option) ) {
+		printf("  Option: %s\n", loki_getname_option(option));
+		for( file = loki_getfirst_file(option); file;
+			file = loki_getnext_file(file) ) {
+
+			switch( loki_check_file(file) ) {
+				case LOKI_REMOVED:
+					printf("    %s REMOVED\n",loki_getpath_file(file));
+					break;
+				case LOKI_CHANGED:
+				case LOKI_OK:
+				default:
+					printf("    %s\n",loki_getpath_file(file));
+					break;
+			}
+		}
+		printf("\n");
+	}
+	printf("\n");
+	return 0;
+}
+
 int main(int argc, char **argv)
 {
 	int ret = 1;
@@ -206,7 +260,9 @@ int main(int argc, char **argv)
 				print_usage(argv[0]);
 			}
 		}
-    } else if ( !strcmp(argv[2], "printtags") ) {
+    } else if ( !strcmp(argv[2], "listfiles") ) {
+		ret = list_files(argc>3 ? argv[3] : NULL);
+	} else if ( !strcmp(argv[2], "printtags") ) {
 		ret = printtags(argv[3]);
     } else {
         print_usage(argv[0]);
