@@ -1,6 +1,6 @@
 #
 # Makefile for the Loki registry library
-# $Id: Makefile,v 1.6 2000-10-17 03:33:06 megastep Exp $
+# $Id: Makefile,v 1.7 2000-10-21 00:05:02 hercules Exp $
 #
 
 CC		= gcc
@@ -16,6 +16,9 @@ libsetupdb.a: $(OBJS)
 
 convert: convert.o libsetupdb.a
 	$(CC) -g -o $@ $^ $(LIBS) -static -s
+
+brandelf: brandelf.o
+	$(CC) -o $@ $^
 
 md5sum:
 	$(CC) $(CFLAGS) -o $@ md5.c -DMD5SUM_PROGRAM -lz
