@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.29 2000-11-03 02:50:45 hercules Exp $ */
+/* $Id: setupdb.c,v 1.30 2000-11-03 07:02:45 megastep Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -284,6 +284,7 @@ product_t *loki_openproduct(const char *name)
     for ( node = doc->root->childs; node; node = node->next ) {
         if ( !strcmp(node->name, "component") ) {
             xmlNodePtr optnode;
+
             product_component_t *comp = (product_component_t *) malloc(sizeof(product_component_t));
 
             comp->node = node;
@@ -292,7 +293,8 @@ product_t *loki_openproduct(const char *name)
             comp->version = strdup(xmlGetProp(node, "version"));
             str = xmlGetProp(node, "update_url");
             comp->url = str ? strdup(str) : NULL;
-            comp->is_default = (xmlGetProp(node, "default") != NULL);
+            str = xmlGetProp(node, "default");
+            comp->is_default = (str && *str=='y');
             if ( comp->is_default ) {
                 prod->default_comp = comp;
             }
@@ -624,6 +626,18 @@ const char *loki_getversion_component(product_component_t *component)
 int loki_isdefault_component(product_component_t *comp)
 {
     return comp->is_default;
+}
+
+void loki_setdefault_component(product_component_t *comp)
+{
+    product_t *prod = comp->product;
+    if ( prod->default_comp ) {
+        xmlSetProp(prod->default_comp->node, "default", NULL);
+        prod->default_comp->is_default = 0;
+    }
+    xmlSetProp(comp->node, "default", "yes");
+    prod->default_comp = comp;
+    prod->changed = 1;
 }
 
 product_component_t *loki_create_component(product_t *product, const char *name, const char *version)
