@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.11 2000-10-16 22:11:59 megastep Exp $ */
+/* $Id: setupdb.c,v 1.12 2000-10-17 03:33:06 megastep Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -13,6 +13,7 @@
 #include <tree.h>
 
 #include "setupdb.h"
+#include "arch.h"
 #include "md5.h"
 
 struct _loki_product_t
@@ -1145,44 +1146,17 @@ int loki_runscripts(product_component_t *comp, script_type_t type)
     return count;
 }
 
-/* Function to detect the current architecture */
-static const char *detect_arch(void)
-{
-    const char *arch;
-
-    /* See if there is an environment override */
-    arch = getenv("SETUP_ARCH");
-    if ( arch == NULL ) {
-#ifdef __i386
-        arch = "x86";
-#elif defined(powerpc)
-        arch = "ppc";
-#elif defined(__alpha__)
-        arch = "alpha";
-#elif defined(__sparc__)
-        arch = "sparc64";
-#elif defined(__arm__)
-        arch = "arm";
-#else
-        arch = "unknown";
-#endif
-    }
-    return arch;
-}
-
 /* Perform automatic update of the uninstaller binaries and script.
    'src' is the path where updated binaries can be copied from.
  */
 int loki_upgrade_uninstall(product_t *product, const char *src_bins)
 {
     char binpath[PATH_MAX];
-    struct utsname uts;
+    const char *os_name = detect_os();
     int perform_upgrade = 0;
     product_info_t *pinfo;
     FILE *scr;
 
-    if ( uname(&uts) < 0)
-        perror("uname");
 
     /* TODO: Locate global loki-uninstall and upgrade it if we have sufficient permissions */    
 
@@ -1190,7 +1164,7 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins)
     mkdir(binpath, 0755);
 
     strncat(binpath, "/", sizeof(binpath));
-    strncat(binpath, uts.sysname, sizeof(binpath));
+    strncat(binpath, os_name, sizeof(binpath));
     mkdir(binpath, 0755);
 
     strncat(binpath, "/", sizeof(binpath));
@@ -1213,7 +1187,7 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins)
 
             /* Now check against the version of the binaries we have */
 
-            snprintf(cmd, sizeof(cmd), "%s/%s/%s/uninstall --version", src_bins, uts.sysname,
+            snprintf(cmd, sizeof(cmd), "%s/%s/%s/uninstall --version", src_bins, os_name,
                      detect_arch());
             pipe = popen(cmd, "r");
             if ( pipe ) {
@@ -1244,7 +1218,7 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins)
         struct stat st;
         
         snprintf(srcpath, sizeof(srcpath), "%s/%s/%s/uninstall", src_bins,
-                 uts.sysname, detect_arch());
+                 os_name, detect_arch());
         stat(srcpath, &st);
         src = fopen(srcpath, "rb");
         if ( src ) {

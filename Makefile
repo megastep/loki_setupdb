@@ -1,9 +1,10 @@
 #
 # Makefile for the Loki registry library
-# $Id: Makefile,v 1.5 2000-10-16 23:13:13 hercules Exp $
+# $Id: Makefile,v 1.6 2000-10-17 03:33:06 megastep Exp $
 #
 
-OBJS	= setupdb.o md5.o
+CC		= gcc
+OBJS	= setupdb.o md5.o arch.o
 
 CFLAGS	= -Wall -g -O2 -I. $(shell xml-config --cflags)
 LIBS	= $(shell xml-config --libs)
