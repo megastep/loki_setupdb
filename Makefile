@@ -1,6 +1,6 @@
 #
 # Makefile for the Loki registry library
-# $Id: Makefile,v 1.3 2000-10-12 02:32:49 megastep Exp $
+# $Id: Makefile,v 1.4 2000-10-16 21:56:22 megastep Exp $
 #
 
 CC		= gcc
@@ -22,3 +22,12 @@ clean:
 
 md5sum:
 	$(CC) $(CFLAGS) -o $@ md5.c -DMD5SUM_PROGRAM -lz
+
+dep: depend
+
+depend:
+	$(CC) -MM $(CFLAGS) $(OBJS:.o=.c) > .depend
+
+ifeq ($(wildcard .depend),.depend)
+include .depend
+endif
