@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.51 2003-03-08 03:15:03 megastep Exp $ */
+/* $Id: setupdb.c,v 1.52 2003-03-21 07:34:37 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/wait.h>
 #include <sys/utsname.h>
 #include <stdio.h>
 #include <string.h>
@@ -1890,22 +1891,25 @@ int loki_put_envvars_component(product_component_t *comp)
 	return count;
 }
 
+/* Returns the error code from the command */
 static int run_script(product_t *prod, const char *name)
 {
     char cmd[PATH_MAX];
+	int ret = 1;
     
     if ( name ) {
-        snprintf(cmd, sizeof(cmd), "/bin/sh %s/.manifest/scripts/%s.sh", prod->info.root, name);
-        system(cmd);
-        return 1;
+        snprintf(cmd, sizeof(cmd), "%s/.manifest/scripts/%s.sh", prod->info.root, name);
+        ret = system(cmd);
+		if ( ret != -1 )
+			ret = WEXITSTATUS(ret);
     }
-    return 0;
+	return ret;
 }
 
-/* Run all scripts of a given type, returns the number of scripts successfully run */
+/* Run all scripts of a given type, returns the number of scripts successfully run, or -1 if one of them failed */
 int loki_runscripts(product_component_t *comp, script_type_t type)
 {
-    int count = 0, maj = 0, min = 0;
+    int count = 0, maj = 0, min = 0, ret;
     product_file_t *file;
     product_option_t *opt;
 	distribution distro = detect_distro(&maj, &min);
@@ -1925,17 +1929,25 @@ int loki_runscripts(product_component_t *comp, script_type_t type)
 	putenv(buf3);
 #endif
 
-    /* First look at global scripts */
+    /* First look at component-wide scripts */
     for ( file = comp->scripts; file; file = file->next ) {
         if( file->data.scr_type == type ) {
-            count += run_script(comp->product, file->path);
+            ret = run_script(comp->product, file->path);
+			if ( ret == 0 )
+				count ++;
+			else
+				return -1;
         }
     }
 
     for ( opt = comp->options; opt; opt = opt->next ) {
         for ( file = opt->files; file; file = file->next ) {
             if( file->type==LOKI_FILE_SCRIPT && file->data.scr_type==type ) {
-                count += run_script(comp->product, file->path);
+                ret = run_script(comp->product, file->path);
+				if ( ret == 0 )
+					count ++;
+				else
+					return -1;
             }
         }
     }

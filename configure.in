@@ -135,8 +135,8 @@ if test x$with_vendor != xcodehost; then
 fi
 
 AC_ARG_WITH(image,
-[  --with-image            specifiy the image path  [default=../../spp/private/clpack]], 
-	,   with_image=../../spp/private/clpack)
+[  --with-image            specifiy the image path  [default=../../spp/private/image]], 
+	,   with_image=../../spp/private/image)
 IMAGE="$with_image"
 
 
