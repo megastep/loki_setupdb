@@ -10,9 +10,6 @@
 extern "C" {
 #endif
 
-#define SETUPDB_VERSION_MAJOR 1
-#define SETUPDB_VERSION_MINOR 0
-
 /* Types definition */
 
 struct _loki_product_t;

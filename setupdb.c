@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.36 2000-11-28 02:54:53 megastep Exp $ */
+/* $Id: setupdb.c,v 1.37 2000-11-28 04:36:35 megastep Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -1242,10 +1242,11 @@ static product_file_t *registerfile_update(product_option_t *option, product_fil
 /* Register a file, returns 0 if OK */
 product_file_t *loki_register_file(product_option_t *option, const char *path, const char *md5)
 {
-    product_file_t *file = find_file_by_name(option, 
-                                             remove_root(option->component->product,path));
+    const char *nrpath = remove_root(option->component->product, path);
+    product_file_t *file;
 
     /* Check if this file is already registered for this option */
+    file = find_file_by_name(option, nrpath);
     if ( file ) {
         return registerfile_update(option, file, md5);
     } else {
@@ -1253,7 +1254,7 @@ product_file_t *loki_register_file(product_option_t *option, const char *path, c
         if ( file ) {
             loki_unregister_file(file);
         }
-        return registerfile_new(option, path, md5);
+        return registerfile_new(option, nrpath, md5);
     }
 }
 
