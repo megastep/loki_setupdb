@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.18 2000-10-17 22:49:21 megastep Exp $ */
+/* $Id: setupdb.c,v 1.19 2000-10-18 03:37:54 megastep Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -555,6 +555,72 @@ product_component_t *loki_create_component(product_t *product, const char *name,
     return NULL;
 }
 
+void loki_remove_component(product_component_t *comp)
+{
+    product_option_t *opt, *nextopt;
+    product_file_t   *scr, *nextscr;
+    product_component_t *c, *prev = NULL;
+    char script[PATH_MAX];
+
+    xmlUnlinkNode(comp->node);
+    xmlFreeNode(comp->node);
+    free(comp->name);
+    free(comp->version);
+    free(comp->url);
+
+    /* Free all options */
+        
+    opt = comp->options;
+    while ( opt ) {
+        product_file_t *file, *nextfile;
+        nextopt = opt->next;
+        
+        file = opt->files;
+        while ( file ) {
+            nextfile = file->next;
+            if ( file->type == LOKI_FILE_SCRIPT ) {
+                snprintf(script, sizeof(script),"%s/.manifest/scripts/%s.sh", 
+                         comp->product->info.root, file->path);
+                unlink(script);
+            }
+            free(file->path);
+            free(file);
+            file = nextfile;
+        }
+        
+        free(opt->name);
+        free(opt);
+        opt = nextopt;
+    }
+    
+    /* Free all scripts */
+    scr = comp->scripts;
+    while ( scr ){
+        nextscr = scr->next;
+        
+        snprintf(script, sizeof(script),"%s/.manifest/scripts/%s.sh", comp->product->info.root,
+                 scr->path);
+        unlink(script);
+        free(scr->path);
+        free(scr);
+        scr = nextscr;
+    }
+
+    /* Remove this component from the linked list */
+    for ( c = comp->product->components; c; c = c->next) {
+        if ( c == comp ) {
+            if ( prev ) {
+                prev->next = comp->next;
+            } else {
+                comp->product->components = comp->next;
+            }
+        }
+        prev = c;
+    }
+    
+    comp->product->changed = 1;
+    free(comp);
+}
 
 /* Set a specific URL for updates to that component */
 void loki_seturl_component(product_component_t *comp, const char *url)
@@ -627,6 +693,45 @@ product_option_t *loki_create_option(product_component_t *component, const char 
         return ret;
     }
     return NULL;
+}
+
+void loki_remove_option(product_option_t *opt)
+{
+    product_file_t *file, *nextfile;
+    product_option_t *c, *prev = NULL;
+    char script[PATH_MAX];
+
+    xmlUnlinkNode(opt->node);
+    xmlFreeNode(opt->node);
+    free(opt->name);
+        
+    file = opt->files;
+    while ( file ) {
+        nextfile = file->next;
+        if ( file->type == LOKI_FILE_SCRIPT ) {
+            snprintf(script, sizeof(script),"%s/.manifest/scripts/%s.sh", 
+                     opt->component->product->info.root, file->path);
+            unlink(script);
+        }
+        free(file->path);
+        free(file);
+        file = nextfile;
+    }
+
+    /* Remove this option from the linked list */
+    for ( c = opt->component->options; c; c = c->next) {
+        if ( c == opt ) {
+            if ( prev ) {
+                prev->next = opt->next;
+            } else {
+                opt->component->options = opt->next;
+            }
+        }
+        prev = c;
+    }
+
+    opt->component->product->changed = 1;
+    free(opt);
 }
 
 /* Enumerate files from options */
@@ -1340,7 +1445,7 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins)
                 "        exit 1\n"
                 "    fi\n"
                 "fi\n"
-                "\"$UNINSTALL\" \"%s\"",
+                "\"$UNINSTALL\" \"%s\" $*",
                 SETUPDB_VERSION_MAJOR, SETUPDB_VERSION_MINOR,
                 pinfo->registry_path);
         fchmod(fileno(scr), 0755);

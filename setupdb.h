@@ -95,6 +95,7 @@ void loki_setversion_component(product_component_t *comp, const char *version);
 int loki_isdefault_component(product_component_t *comp);
 
 product_component_t *loki_create_component(product_t *product, const char *name, const char *version);
+void loki_remove_component(product_component_t *comp);
 
 /* Set a specific URL for updates to that component */
 void loki_seturl_component(product_component_t *comp, const char *url);
@@ -114,6 +115,7 @@ const char *loki_getname_option(product_option_t *opt);
 
 product_option_t *loki_create_option(product_component_t *comp, const char *name);
 
+void loki_remove_option(product_option_t *opt);
 
 /* Enumerate files from components */
 
