@@ -1,3 +1,10 @@
+1.0.3:
+Stéphane Peter (Codehost) - Sun Jan 27 17:04:55 PST 2002
+ * Added loki_check_file() function to verify installed files.
+   Used by setup 1.6.0 for the 'check' utility.
+ * De-Lokified setupdb by making the .loki prefix easily configurable
+   in setupdb.h
+
 1.0.2:
 Sam Lantinga - Mon Apr 30 17:07:48 PDT 2001
  * Added checksum list verification to the standalone 'md5sum'

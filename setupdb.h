@@ -6,6 +6,15 @@
 #include <sys/types.h>
 #include <limits.h>
 
+#ifndef LOKI_PREFIX
+#define LOKI_PREFIX "loki"
+#endif
+
+/* This is the user's directory where everything is stored */
+#ifndef LOKI_DIRNAME
+#define LOKI_DIRNAME "." LOKI_PREFIX
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -48,6 +57,12 @@ typedef enum {
     LOKI_SCRIPT_PREUNINSTALL = 0,
     LOKI_SCRIPT_POSTUNINSTALL
 } script_type_t;
+
+typedef enum {
+	LOKI_OK,
+	LOKI_CHANGED,
+	LOKI_REMOVED
+} file_check_t;
 
 /* Enumerate all products, returns name or NULL if end of list */
 
@@ -168,6 +183,9 @@ product_file_t *loki_findpath(const char *path, product_t *product);
    The md5 argument can be NULL, and the checksum will be computed if necesary.
  */
 product_file_t *loki_register_file(product_option_t *option, const char *path, const char *md5);
+
+/* Check a file against its MD5 checksum, for integrity */
+file_check_t loki_check_file(product_file_t *file);
 
 /* Remove a file from the registry. Actually removing the file is up to the caller. */
 int loki_unregister_path(product_option_t *option, const char *path);

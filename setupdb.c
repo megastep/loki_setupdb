@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.41 2001-04-30 23:13:35 hercules Exp $ */
+/* $Id: setupdb.c,v 1.42 2002-01-28 01:10:06 megastep Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -179,7 +179,7 @@ const char *loki_getfirstproduct(void)
 {
     char buf[PATH_MAX];
 
-    snprintf(buf, sizeof(buf), "%s/.loki/installed/%s/*.xml", detect_home(), get_xml_base());
+    snprintf(buf, sizeof(buf), "%s/" LOKI_DIRNAME "/installed/%s/*.xml", detect_home(), get_xml_base());
     if ( glob(buf, GLOB_ERR, NULL, &globbed) != 0 ) {
         return NULL;
     } else {
@@ -303,7 +303,7 @@ product_t *loki_openproduct(const char *name)
         /* Look for a matching case-insensitive file */
         static glob_t xmls;
         
-        snprintf(buf, sizeof(buf), "%s/.loki/installed/%s/*.xml", detect_home(), get_xml_base());
+        snprintf(buf, sizeof(buf), "%s/" LOKI_DIRNAME "/installed/%s/*.xml", detect_home(), get_xml_base());
         if ( glob(buf, GLOB_ERR, NULL, &xmls) != 0 ) {
             return NULL;
         } else {
@@ -481,7 +481,7 @@ product_t *loki_create_product(const char *name, const char *root, const char *d
     product_t *prod;
 
 	/* Create hierarchy if it doesn't exist already */
-	snprintf(homefile, sizeof(homefile), "%s/.loki", detect_home());
+	snprintf(homefile, sizeof(homefile), "%s/" LOKI_DIRNAME, detect_home());
 	mkdir(homefile, 0700);
 
 	strncat(homefile, "/installed", sizeof(homefile)-strlen(homefile));
@@ -667,7 +667,7 @@ int loki_removeproduct(product_t *product)
         perror("Could not remove install directory");
 
     /* Remove the symlink */
-    snprintf(buf, sizeof(buf), "%s/.loki/installed/%s/%s.xml", detect_home(), get_xml_base(), product->info.name);
+    snprintf(buf, sizeof(buf), "%s/" LOKI_DIRNAME "/installed/%s/%s.xml", detect_home(), get_xml_base(), product->info.name);
     unlink(buf);
     
     loki_closeproduct(product);
@@ -1281,6 +1281,80 @@ product_file_t *loki_register_file(product_option_t *option, const char *path, c
     }
 }
 
+/* Check a file against its MD5 checksum, for integrity */
+file_check_t loki_check_file(product_file_t *file)
+{
+	char path[PATH_MAX];
+	char md5sum[33];
+	const char *str;
+	struct stat st;
+
+	expand_path(file->option->component->product, file->path, path, sizeof(path));
+
+    switch(file->type) {
+    case LOKI_FILE_REGULAR:
+		if ( access(path, F_OK) < 0 )
+			return LOKI_REMOVED;
+		/* Compare MD5 checksums if file exists */
+		md5_compute(path, md5sum, 1);
+		str = xmlGetProp(file->node, "md5");
+		if ( str && strncmp(md5sum, str, CHECKSUM_SIZE) ) 
+			return LOKI_CHANGED;
+		break;
+    case LOKI_FILE_SYMLINK:
+		if ( lstat(path, &st) < 0 )
+			return LOKI_REMOVED;
+		/*  Compare symlinks contents */
+		str = xmlGetProp(file->node, "dest");
+		if ( str ) {
+			char buf[PATH_MAX];
+			int count;
+
+			count = readlink(path, buf, sizeof(buf));
+			if ( count < 0 ) {
+				return LOKI_CHANGED;
+			} else {
+				buf[count] = '\0';
+			}
+			if ( strcmp(buf, str) )
+				return LOKI_CHANGED;
+		}
+		break;
+    case LOKI_FILE_DEVICE:
+		if ( stat(path, &st) < 0 )
+			return LOKI_REMOVED;
+		/* Check that device has the same characteristics */
+		str = xmlGetProp(file->node, "type");
+		if ( str ) {
+			if ( !strcmp(str, "block") && !S_ISBLK(st.st_mode) )
+				return LOKI_CHANGED;
+			if ( !strcmp(str, "char") && !S_ISCHR(st.st_mode) )
+				return LOKI_CHANGED;
+
+			str = xmlGetProp(file->node, "major");
+			if ( str && major(st.st_rdev)!=atoi(str) )
+				return LOKI_CHANGED;
+			str = xmlGetProp(file->node, "minor");
+			if ( str && minor(st.st_rdev)!=atoi(str) )
+				return LOKI_CHANGED;
+		}
+		break;
+    case LOKI_FILE_DIRECTORY:
+    case LOKI_FILE_SOCKET:
+    case LOKI_FILE_FIFO:
+		/* FIXME: Only test for existence */
+		if ( access(path, F_OK) < 0 )
+			return LOKI_REMOVED;
+		break;
+    case LOKI_FILE_RPM:
+    case LOKI_FILE_SCRIPT:
+    case LOKI_FILE_NONE:
+		/* Do nothing */
+		break;
+	}
+	return LOKI_OK;
+}
+
 static void unregister_file(product_file_t *file, product_file_t **opt)
 {
     xmlUnlinkNode(file->node);
@@ -1600,10 +1674,10 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
 
     /* TODO: Locate global loki-uninstall and upgrade it if we have sufficient permissions */    
 
-    snprintf(binpath, sizeof(binpath), "%s/.loki/installed/locale", detect_home());
+    snprintf(binpath, sizeof(binpath), "%s/" LOKI_DIRNAME "/installed/locale", detect_home());
     mkdir(binpath, 0755);
 
-    snprintf(binpath, sizeof(binpath), "%s/.loki/installed/bin", detect_home());
+    snprintf(binpath, sizeof(binpath), "%s/" LOKI_DIRNAME "/installed/bin", detect_home());
     mkdir(binpath, 0755);
 
     strncat(binpath, "/", sizeof(binpath));
@@ -1692,7 +1766,7 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
         if ( lang && locale_path ) {
             int found = 0;
 
-            snprintf(binpath, sizeof(binpath), "%s/.loki/installed/locale/%s", detect_home(),
+            snprintf(binpath, sizeof(binpath), "%s/" LOKI_DIRNAME "/installed/locale/%s", detect_home(),
                      lang);
             mkdir(binpath, 0755);
 
@@ -1716,7 +1790,7 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
                 src = fopen(binpath, "rb");
                 if ( src ) {
                     snprintf(binpath, sizeof(binpath),
-                             "%s/.loki/installed/locale/%s/LC_MESSAGES/loki-uninstall.mo",
+                             "%s/" LOKI_DIRNAME "/installed/locale/%s/LC_MESSAGES/loki-uninstall.mo",
                              detect_home(), lang);
                     dst = fopen(binpath, "wb");
                     if ( dst ) {
@@ -1752,10 +1826,10 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
                 "        return $status\n"
                 "}\n\n"
 
-                "if which loki_uninstall > /dev/null 2>&1; then\n"
-                "    UNINSTALL=loki_uninstall\n"
+                "if which " LOKI_PREFIX "-uninstall > /dev/null 2>&1; then\n"
+                "    UNINSTALL=" LOKI_PREFIX "-uninstall\n"
                 "else\n"
-                "    UNINSTALL=\"$HOME/.loki/installed/bin/`uname -s`/`DetectARCH`/uninstall\"\n"
+                "    UNINSTALL=\"$HOME/" LOKI_DIRNAME "/installed/bin/`uname -s`/`DetectARCH`/uninstall\"\n"
                 "    if [ ! -x \"$UNINSTALL\" ]; then\n"
                 "        echo Could not find a usable uninstall program. Aborting.\n"
                 "        exit 1\n"

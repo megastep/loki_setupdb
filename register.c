@@ -1,6 +1,6 @@
 /* Command-line utility to manipulate product entries from scripts */
 
-/* $Id: register.c,v 1.1 2000-11-22 21:58:32 megastep Exp $ */
+/* $Id: register.c,v 1.2 2002-01-28 01:10:06 megastep Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
