@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.19 2000-10-18 03:37:54 megastep Exp $ */
+/* $Id: setupdb.c,v 1.20 2000-10-18 04:56:27 megastep Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -1159,13 +1159,14 @@ int loki_registerscript_fromfile_component(product_component_t *comp, script_typ
 
     if ( !stat(path, &st) ) {
         FILE *fd;
-        char *script = (char *)malloc(st.st_size);
+        char *script = (char *)malloc(st.st_size+1);
 
         fd = fopen(path, "r");
         if ( fd ) {
             product_file_t *file;
             fread(script, st.st_size, 1, fd);
             fclose(fd);
+            script[st.st_size] = '\0';
             file = registerscript(comp->node, type, name, script, comp->product);
             if ( file ) {
                 file->option = NULL;
@@ -1187,13 +1188,14 @@ int loki_registerscript_fromfile(product_option_t *opt, script_type_t type,
 
     if ( !stat(path, &st) ) {
         FILE *fd;
-        char *script = (char *)malloc(st.st_size);
+        char *script = (char *)malloc(st.st_size+1);
 
         fd = fopen(path, "r");
         if ( fd ) {
             product_file_t *file;
             fread(script, st.st_size, 1, fd);
             fclose(fd);
+            script[st.st_size] = '\0';
             file = registerscript(opt->node, type, name, script, opt->component->product);
             if ( file ) {
                 file->option = opt;
