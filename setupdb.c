@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.17 2000-10-17 09:36:23 megastep Exp $ */
+/* $Id: setupdb.c,v 1.18 2000-10-17 22:49:21 megastep Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -429,11 +429,31 @@ int loki_closeproduct(product_t *product)
 int loki_removeproduct(product_t *product)
 {
     char buf[PATH_MAX];
+    product_file_t *file;
+    product_option_t *opt;
+    product_component_t *comp;
+
+    /* Remove the remaining scripts for each component and options */
+    for ( comp = product->components; comp; comp = comp->next ) {
+        for ( file = comp->scripts; file; file = file->next ) {
+            snprintf(buf, sizeof(buf), "%s/.manifest/scripts/%s.sh",
+                     product->info.root, file->path);
+            unlink(buf);
+        }
+        
+        for ( opt = comp->options; opt; opt = opt->next ) {
+            for ( file = opt->files; file; file = file->next ) {
+                if( file->type == LOKI_FILE_SCRIPT ) {
+                    snprintf(buf, sizeof(buf), "%s/.manifest/scripts/%s.sh",
+                             product->info.root, file->path);
+                    unlink(buf);
+                }
+            }
+        }
+    }
 
     /* Remove the XML file */
     unlink(product->info.registry_path);
-
-    /* TODO: Remove the scripts for each component */
 
     /* Remove the directories */
     snprintf(buf, sizeof(buf), "%s/.manifest/scripts", product->info.root);
@@ -1124,7 +1144,7 @@ static int run_script(product_t *prod, const char *name)
     char cmd[PATH_MAX];
     
     if ( name ) {
-        snprintf(cmd, sizeof(cmd), "/bin/sh %s/.manifest/scripts/%s", prod->info.root, name);
+        snprintf(cmd, sizeof(cmd), "/bin/sh %s/.manifest/scripts/%s.sh", prod->info.root, name);
         system(cmd);
         return 1;
     }
