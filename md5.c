@@ -374,7 +374,7 @@ int md5_compute(const char *path, char md5sum[], int unpack)
             return -1;
         }
         md5_init(&ctx);
-        while ( (count = fread(buf, sizeof(buf), 1, fd)) > 0 ){        
+        while ( (count = fread(buf, 1, sizeof(buf), fd)) > 0 ){        
             md5_write(&ctx, buf, count);
         }
         md5_final(&ctx);
