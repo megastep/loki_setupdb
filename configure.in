@@ -97,7 +97,9 @@ powerpc-apple-darwin*)
                 ARCH=ppc
         fi
 	;;
-*ppc* | *powerpc*)
+    *ppc64* | *powerpc64*)
+        ARCH=ppc64 ;;
+    *ppc* | *powerpc*)
         ARCH=ppc ;;
 *i?86*)
         ARCH=x86 ;;
