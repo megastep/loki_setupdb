@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.20 2000-10-18 04:56:27 megastep Exp $ */
+/* $Id: setupdb.c,v 1.21 2000-10-18 20:16:39 megastep Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -143,15 +143,34 @@ product_t *loki_openproduct(const char *name)
     char buf[PATH_MAX];
     int major, minor;
     const char *str;
-    xmlDocPtr doc;
+    xmlDocPtr doc = NULL;
     xmlNodePtr node;
     product_t *prod;
 
     if ( *name == '/' ) { /* Absolute path to a manifest.ini file */
         doc = xmlParseFile(name);
     } else {
-        snprintf(buf, sizeof(buf), "%s/.loki/installed/%s.xml", getenv("HOME"), name);
-        doc = xmlParseFile(buf);
+        /* Look for a matching case-insensitive file */
+        static glob_t xmls;
+        
+        snprintf(buf, sizeof(buf), "%s/.loki/installed/*.xml", getenv("HOME"));
+        if ( glob(buf, GLOB_ERR, NULL, &xmls) != 0 ) {
+            return NULL;
+        } else {
+            if ( xmls.gl_pathc == 0 ) {
+                return NULL;
+            } else {
+                int i;
+                for ( i = 0; i < xmls.gl_pathc; ++i ) {
+                    if ( !strcasecmp(name, get_productname(xmls.gl_pathv[i])) ) {
+                        /* The .xml extension was removed by get_productname() */
+                        snprintf(buf, sizeof(buf), "%s.xml", xmls.gl_pathv[i]);
+                        doc = xmlParseFile(buf);                                
+                        break;
+                    }
+                }
+            }
+        }
     }
     if ( !doc )
         return NULL;
