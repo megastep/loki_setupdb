@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.6 2000-10-12 00:57:02 megastep Exp $ */
+/* $Id: setupdb.c,v 1.7 2000-10-12 03:14:29 megastep Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -168,6 +168,8 @@ product_t *loki_openproduct(const char *name)
     strncpy(prod->info.root, str, sizeof(prod->info.root));
     str = xmlGetProp(doc->root, "update_url");
     strncpy(prod->info.url, str, sizeof(prod->info.url));
+    snprintf(prod->info.registry_path, sizeof(prod->info.registry_path), "%s/.manifest/%s.xml",
+             prod->info.root, prod->info.name);
 
     /* Check for the xmlversion attribute for backwards compatibility */
     str = xmlGetProp(doc->root, "xmlversion");
@@ -354,6 +356,8 @@ product_t *loki_create_product(const char *name, const char *root, const char *d
     xmlSetProp(doc->root, "root", root);
     strncpy(prod->info.url, url, sizeof(prod->info.url));
     xmlSetProp(doc->root, "update_url", url);
+    snprintf(prod->info.registry_path, sizeof(prod->info.registry_path), "%s/.manifest/%s.xml",
+             root, name);
 
     return prod;
 }
@@ -365,12 +369,10 @@ product_t *loki_create_product(const char *name, const char *root, const char *d
 int loki_closeproduct(product_t *product)
 {
     product_component_t *comp, *next;
-    char path[PATH_MAX];
 
     if ( product->changed ) {
         /* Write XML file to disk if it has changed */
-        snprintf(path, sizeof(path), "%s/.manifest/%s.xml", product->info.root, product->info.name);
-        xmlSaveFile(path, product->doc);
+        xmlSaveFile(product->info.registry_path, product->doc);
     }
 
     /* Go through all the allocated structs */
@@ -425,8 +427,7 @@ int loki_removeproduct(product_t *product)
     char buf[PATH_MAX];
 
     /* Remove the XML file */
-    snprintf(buf, sizeof(buf), "%s/.manifest/%s.xml", product->info.root, product->info.name);
-    unlink(buf);
+    unlink(product->info.registry_path);
 
     /* TODO: Remove the scripts for each component */
 
@@ -454,7 +455,7 @@ int loki_removeproduct(product_t *product)
 
 /* Get a pointer to the product info */
 
-product_info_t *loki_getproductinfo(product_t *product)
+product_info_t *loki_getinfo_product(product_t *product)
 {
     return &product->info;
 }

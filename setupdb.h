@@ -31,6 +31,7 @@ typedef struct {
     char description[128];
     char root[PATH_MAX];
     char url[PATH_MAX];
+    char registry_path[PATH_MAX];
 } product_info_t;
 
 typedef enum {
@@ -76,7 +77,7 @@ int loki_removeproduct(product_t *product);
 
 /* Get a pointer to the product info */
 
-product_info_t *loki_getproductinfo(product_t *product);
+product_info_t *loki_getinfo_product(product_t *product);
 
 /* Enumerate the installed components */
 
