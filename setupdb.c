@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.26 2000-10-27 21:34:56 megastep Exp $ */
+/* $Id: setupdb.c,v 1.27 2000-10-30 23:39:33 hercules Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -185,8 +185,12 @@ const char *loki_getnextproduct(void)
 void loki_split_version(const char *version, char *base, int maxbase,
                                              char *ext, int maxext)
 {
-    while ( --maxbase && (isalnum(*version) || (*version == '.')) ) {
+    if ( *version == '*' ) {
         *base++ = *version++;
+    } else {
+        while ( --maxbase && (isalnum(*version) || (*version == '.')) ) {
+            *base++ = *version++;
+        }
     }
     *base = '\0';
 
