@@ -9,4 +9,7 @@ const char *detect_arch(void);
 /* Returns the OS string */
 const char *detect_os(void);
 
-#endif
+/* Function to detect the current version of libc */
+const char *detect_libc(void);
+
+#endif /* __ARCH_H__ */
