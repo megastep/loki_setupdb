@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.25 2000-10-27 05:41:28 hercules Exp $ */
+/* $Id: setupdb.c,v 1.26 2000-10-27 21:34:56 megastep Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -1520,7 +1520,7 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
 
         /* Copy the locale files */
         lang = getenv("LANG");
-        if ( lang ) {
+        if ( lang && locale_path ) {
             int found = 0;
 
             snprintf(binpath, sizeof(binpath), "%s/.loki/installed/locale/%s", getenv("HOME"),
