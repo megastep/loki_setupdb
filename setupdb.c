@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.22 2000-10-24 20:07:37 hercules Exp $ */
+/* $Id: setupdb.c,v 1.23 2000-10-26 00:13:05 megastep Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -85,6 +85,50 @@ static const char *expand_path(product_t *prod, const char *path, char *buf, siz
     } else {
         snprintf(buf, len, "%s/%s", prod->info.root, path);
     }
+    return buf;
+}
+
+struct subst {
+    char ch;
+    const char *str;
+};
+
+#define NUM_XML_SUBSTS 5
+
+/* Substitute special characters with XML tokens */
+static const char *substitute_xml_string(const char *str)
+{
+    const char *ptr;
+    char *ret;
+    int i, count = 0;
+    static char buf[PATH_MAX*2];
+    static struct subst substs[NUM_XML_SUBSTS] = {
+        { '&', "&amp;" },
+        { '<', "&lt;" },
+        { '>', "&gt;" },
+        { '\'', "&apos;" },
+        { '"', "&quot;" }
+    };
+
+    ret = buf;
+    while ( *str ) {
+        for ( i = 0; i < NUM_XML_SUBSTS; ++i ) {
+            if ( substs[i].ch == *str ) {
+                for ( ptr = substs[i].str; *ptr && count<sizeof(buf); ptr ++) {
+                    *ret ++ = *ptr;
+                    count ++;
+                }
+                break;
+            }
+        }
+        if ( i == NUM_XML_SUBSTS && count<sizeof(buf) ) {
+            *ret ++ = *str;
+            count ++;
+        }
+        str ++;
+    }
+    if ( count<sizeof(buf) )
+        *ret ++ = '\0';
     return buf;
 }
 
@@ -906,7 +950,7 @@ static product_file_t *registerfile_new(product_option_t *option, const char *pa
     if ( S_ISREG(st.st_mode) ) {
         file->type = LOKI_FILE_REGULAR;
         if ( md5 ) {
-            file->node = xmlNewChild(option->node, NULL, "file", path);
+            file->node = xmlNewChild(option->node, NULL, "file", substitute_xml_string(path));
             xmlSetProp(file->node, "md5", md5);
             memcpy(file->data.md5sum, get_md5_bin(md5), 16);
         } else {
@@ -918,19 +962,19 @@ static product_file_t *registerfile_new(product_option_t *option, const char *pa
                 snprintf(fpath, sizeof(fpath), "%s/%s", option->component->product->info.root, path);
                 md5_compute(fpath, md5sum, 1);
             }
-            file->node = xmlNewChild(option->node, NULL, "file", path);
+            file->node = xmlNewChild(option->node, NULL, "file", substitute_xml_string(path));
             xmlSetProp(file->node, "md5", md5sum);
             memcpy(file->data.md5sum, get_md5_bin(md5sum), 16);
         }
     } else if ( S_ISDIR(st.st_mode) ) {
         file->type = LOKI_FILE_DIRECTORY;
-        file->node = xmlNewChild(option->node, NULL, "directory", path);
+        file->node = xmlNewChild(option->node, NULL, "directory", substitute_xml_string(path));
     } else if ( S_ISLNK(st.st_mode) ) {
         char buf[PATH_MAX];
         int count;
 
         file->type = LOKI_FILE_SYMLINK;
-        file->node = xmlNewChild(option->node, NULL, "symlink", path);
+        file->node = xmlNewChild(option->node, NULL, "symlink", substitute_xml_string(path));
         count = readlink(full, buf, sizeof(buf));
         if ( count < 0 ) {
             fprintf(stderr, "readlink: Could not find symbolic link %s\n", full);
@@ -940,10 +984,10 @@ static product_file_t *registerfile_new(product_option_t *option, const char *pa
         }
     } else if ( S_ISFIFO(st.st_mode) ) {
         file->type = LOKI_FILE_FIFO;
-        file->node = xmlNewChild(option->node, NULL, "fifo", path);
+        file->node = xmlNewChild(option->node, NULL, "fifo", substitute_xml_string(path));
     } else if ( S_ISBLK(st.st_mode) ) {
         file->type = LOKI_FILE_DEVICE;
-        file->node = xmlNewChild(option->node, NULL, "device", path);
+        file->node = xmlNewChild(option->node, NULL, "device", substitute_xml_string(path));
         xmlSetProp(file->node, "type", "block");
         /* Get the major/minor device number info */
         snprintf(dev,sizeof(dev),"%d", major(st.st_rdev));
@@ -952,7 +996,7 @@ static product_file_t *registerfile_new(product_option_t *option, const char *pa
         xmlSetProp(file->node, "minor", dev);
     } else if ( S_ISCHR(st.st_mode) ) {
         file->type = LOKI_FILE_DEVICE;
-        file->node = xmlNewChild(option->node, NULL, "device", path);
+        file->node = xmlNewChild(option->node, NULL, "device", substitute_xml_string(path));
         xmlSetProp(file->node, "type", "char");
         /* Get the major/minor device number info */
         snprintf(dev,sizeof(dev),"%d", major(st.st_rdev));
@@ -1106,7 +1150,7 @@ int loki_register_rpm(product_option_t *option, const char *name, const char *ve
     char rev[10];
 
     rpm = (product_file_t *) malloc(sizeof(product_file_t));
-    rpm->node = xmlNewChild(option->node, NULL, "rpm", name);    
+    rpm->node = xmlNewChild(option->node, NULL, "rpm", substitute_xml_string(name));
     xmlSetProp(rpm->node, "version", version);
     snprintf(rev, sizeof(rev), "%d", revision);
     xmlSetProp(rpm->node, "revision", rev);
@@ -1149,7 +1193,7 @@ static product_file_t *registerscript(xmlNodePtr parent, script_type_t type, con
         fchmod(fileno(fd), 0755);
         fclose(fd);
 
-        scr->node = xmlNewChild(parent, NULL, "script", name);
+        scr->node = xmlNewChild(parent, NULL, "script", substitute_xml_string(name));
         xmlSetProp(scr->node, "type", script_types[type]);
         product->changed = 1;
 
@@ -1371,6 +1415,9 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins)
 
     /* TODO: Locate global loki-uninstall and upgrade it if we have sufficient permissions */    
 
+    snprintf(binpath, sizeof(binpath), "%s/.loki/installed/locale", getenv("HOME"));
+    mkdir(binpath, 0755);
+
     snprintf(binpath, sizeof(binpath), "%s/.loki/installed/bin", getenv("HOME"));
     mkdir(binpath, 0755);
 
@@ -1453,6 +1500,9 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins)
         } else {
             fprintf(stderr, "Couldn't open %s to be copied!\n", src_bins);
         }
+
+        /* TODO: Copy the locale files */
+        
     }
 
     /* Now we create an 'uninstall' shell script in the game's installation directory */
