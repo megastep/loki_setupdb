@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.63 2004-06-04 01:54:57 megastep Exp $ */
+/* $Id: setupdb.c,v 1.64 2004-08-04 03:13:19 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -2080,11 +2080,11 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
 
     strncat(binpath, "/uninstall", sizeof(binpath));
 
-    if ( !access(binpath, X_OK) ) {
+    if ( !access(binpath, X_OK) && !access(src_bins, R_OK) ) {
         char cmd[PATH_MAX];
         FILE *pipe;
         
-        snprintf(cmd, sizeof(cmd), "%s --version", binpath);
+        snprintf(cmd, sizeof(cmd), "%s -v", binpath);
         pipe = popen(cmd, "r");
         if ( pipe ) {
             int major, minor, rel, ret;
@@ -2100,9 +2100,9 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
             /* Now check against the version of the binaries we have */
             tmpbin = copy_binary_to_tmp(src_bins);
             if ( tmpbin ) {
-                snprintf(cmd, sizeof(cmd), "%s --version", tmpbin);
+                snprintf(cmd, sizeof(cmd), "%s -v", tmpbin);
             } else { /* We still try to run it if the copy failed for some reason */
-                snprintf(cmd, sizeof(cmd), "%s --version", src_bins);
+                snprintf(cmd, sizeof(cmd), "%s -v", src_bins);
             }
             pipe = popen(cmd, "r");
             if ( pipe ) {
@@ -2155,7 +2155,11 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
         }
 
         /* Copy the locale files */
-        lang = getenv("LANG");
+		lang = getenv("LC_ALL");
+		if ( ! lang )
+			lang = getenv("LC_MESSAGES");
+		if ( ! lang ) 
+			lang = getenv("LANG");
         if ( lang && locale_path ) {
             int found = 0;
 
@@ -2260,8 +2264,9 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
                 "        exit 1\n"
                 "    fi\n"
                 "fi\n"
-                "\"$UNINSTALL\" \"%s\" \"$1\"",
+                "\"$UNINSTALL\" -L %s \"%s\" \"$1\"",
                 SETUPDB_VERSION_MAJOR, SETUPDB_VERSION_MINOR,
+				pinfo->name,
                 pinfo->registry_path);
         fchmod(fileno(scr), 0755);
         fclose(scr);
