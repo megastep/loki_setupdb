@@ -51,9 +51,6 @@ GETOPT_C=""
 
 AC_CHECK_FUNCS(setenv)
 AC_CHECK_FUNCS(unsetenv)
-AC_CHECK_FUNCS(getopt, , GETOPT_C="getopt.c")
-AC_CHECK_FUNCS(getopt_long, , GETOPT_C="getopt.c")
-AC_CHECK_LIB(gnugetopt, getopt_long, EXTRA_LIBS="-lgnugetopt"; GETOPT_C="")
 AC_PATH_PROG(BRANDELF, brandelf, true)
 
 STATIC=""
@@ -124,6 +121,10 @@ case "$target" in
 esac
 
 CFLAGS="$CFLAGS $REENTRANT"
+
+AC_CHECK_FUNCS(getopt, , GETOPT_C="getopt.c")
+AC_CHECK_FUNCS(getopt_long, , GETOPT_C="getopt.c")
+AC_CHECK_LIB(gnugetopt, getopt_long, LIBS="$LIBS $BSTATIC -lgnugetopt"; GETOPT_C="")
 
 AC_SUBST(ARCH)
 AC_SUBST(STATIC)
