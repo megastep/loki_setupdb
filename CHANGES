@@ -1,0 +1,2 @@
+Sam Lantinga - Wed Apr  4 10:19:25 PDT 2001
+ * Added loki_setroot_product() and loki_setupdateurl_product()

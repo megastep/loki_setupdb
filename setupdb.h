@@ -63,6 +63,14 @@ product_t *loki_openproduct(const char *name);
 
 product_t *loki_create_product(const char *name, const char *root, const char *desc, const char *url);
 
+/* Set the install path of a product */
+
+void loki_setroot_product(product_t *product, const char *root);
+
+/* Set the update URL of a product */
+
+void loki_setupdateurl_product(product_t *product, const char *url);
+
 /* Close a product entry and free all allocated memory.
    Also writes back to the database all changes that may have been made.
  */

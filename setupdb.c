@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.39 2001-03-08 22:55:35 hercules Exp $ */
+/* $Id: setupdb.c,v 1.40 2001-04-04 17:20:27 hercules Exp $ */
 
 #include <glob.h>
 #include <unistd.h>
@@ -544,6 +544,24 @@ product_t *loki_create_product(const char *name, const char *root, const char *d
              root, name);
 
     return prod;
+}
+
+/* Set the install path of a product */
+
+void loki_setroot_product(product_t *product, const char *root)
+{
+    strncpy(product->info.root, root, sizeof(product->info.root));
+    xmlSetProp(product->doc->root, "root", root);
+    product->changed = 1;
+}
+
+/* Set the update URL of a product */
+
+void loki_setupdateurl_product(product_t *product, const char *url)
+{
+    strncpy(product->info.url, url, sizeof(product->info.url));
+    xmlSetProp(product->doc->root, "update_url", url);
+    product->changed = 1;
 }
 
 /* Close a product entry and free all allocated memory.
