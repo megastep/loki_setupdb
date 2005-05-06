@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.71 2005-02-09 23:53:26 megastep Exp $ */
+/* $Id: setupdb.c,v 1.72 2005-05-06 02:07:24 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -1722,6 +1722,47 @@ int loki_unregister_rpm(product_t *product, const char *name)
     product->changed = 1;
 
     return -1;
+}
+
+/* Find a script by its name, within an optional component or NULL for all */
+product_file_t *loki_find_script(product_t *product, product_component_t *component, const char *name)
+{
+	if ( component )
+		product = component->product;
+
+	if ( product && name ) {
+        product_option_t *opt;
+        product_file_t *file;
+
+		if ( component ) {
+			for( opt = component->options; opt; opt = opt->next ) {
+				for( file = opt->files; file; file = file->next ) {
+					if ( file->type==LOKI_FILE_SCRIPT ) {
+						if ( ! strcmp(name, file->path) ) {
+							/* We found our match */
+							return file;
+						}
+					}
+				}
+			}
+		} else {
+			product_component_t *comp;
+
+			for( comp = product->components; comp; comp = comp->next ) {
+				for( opt = comp->options; opt; opt = opt->next ) {
+					for( file = opt->files; file; file = file->next ) {
+						if ( file->type==LOKI_FILE_SCRIPT ) {
+							if ( ! strcmp(name, file->path) ) {
+								/* We found our match */
+								return file;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return NULL;
 }
 
 static product_file_t *registerscript(xmlNodePtr parent, script_type_t type, const char *name,

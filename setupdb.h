@@ -249,6 +249,9 @@ int loki_registerscript_fromfile_component(product_component_t *comp, script_typ
 /* Unregister a registered script, and remove the file */
 int loki_unregister_script(product_component_t *component, const char *name);
 
+/* Find a script by its name, within an optional component or NULL for all */
+product_file_t *loki_find_script(product_t *product, product_component_t *component, const char *name);
+
 /* Run all scripts of a given type, returns the number of scripts successfully run */
 int loki_runscripts(product_component_t *component, script_type_t type);
 
