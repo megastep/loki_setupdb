@@ -1,4 +1,4 @@
-/* $Id: arch.c,v 1.18 2005-08-12 02:31:26 megastep Exp $ */
+/* $Id: arch.c,v 1.19 2005-08-23 00:19:35 megastep Exp $ */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -69,6 +69,7 @@ const char *detect_libc(void)
     static const char *libclist[] = {
         "/lib/libc.so.6",
         "/lib/libc.so.6.1",
+        "/lib/libc.so.6.2",
         NULL
     };
     int i;
@@ -89,16 +90,26 @@ const char *detect_libc(void)
     }
     libcfile = libclist[i];
 
-    if ( libcfile ) {
-      char buffer[1024];
-      snprintf( buffer, sizeof(buffer), 
-           "fgrep GLIBC_2.1 %s 2>&1 >/dev/null",
-           libcfile );
-      
-      if ( system(buffer) == 0 )
-		  return "glibc-2.1";
-      else
-		  return "glibc-2.0";
+    if ( libcfile )
+    {
+	char buffer[1024];
+
+	snprintf( buffer, sizeof(buffer), 
+		"fgrep GLIBC_2.3 %s 2>&1 >/dev/null", libcfile );
+	if ( system(buffer) == 0 )
+		return "glibc-2.3";
+
+	snprintf( buffer, sizeof(buffer), 
+			"fgrep GLIBC_2.2 %s 2>&1 >/dev/null", libcfile );
+	if ( system(buffer) == 0 )
+		return "glibc-2.2";
+
+	snprintf( buffer, sizeof(buffer), 
+			"fgrep GLIBC_2.1 %s 2>&1 >/dev/null", libcfile );
+	if ( system(buffer) == 0 )
+		return "glibc-2.1";
+
+	return "glibc-2.0";
     }
     /* Default to version 5 */
     return "libc5";

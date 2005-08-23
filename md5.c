@@ -361,7 +361,7 @@ int md5_compute(const char *path, char md5sum[], int unpack)
         }
         md5_init(&ctx);
         while ( (count = gzread(fd, buf, sizeof(buf))) > 0 ){        
-            md5_write(&ctx, buf, count);
+            md5_write(&ctx, (unsigned char *)buf, count);
         }
         md5_final(&ctx);
         gzclose(fd);
@@ -374,7 +374,7 @@ int md5_compute(const char *path, char md5sum[], int unpack)
         }
         md5_init(&ctx);
         while ( (count = fread(buf, 1, sizeof(buf), fd)) > 0 ){        
-            md5_write(&ctx, buf, count);
+            md5_write(&ctx, (unsigned char *)buf, count);
         }
         md5_final(&ctx);
         fclose(fd);
