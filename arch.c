@@ -1,4 +1,4 @@
-/* $Id: arch.c,v 1.19 2005-08-23 00:19:35 megastep Exp $ */
+/* $Id: arch.c,v 1.20 2005-08-24 22:02:47 megastep Exp $ */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -92,24 +92,25 @@ const char *detect_libc(void)
 
     if ( libcfile )
     {
-	char buffer[1024];
-
-	snprintf( buffer, sizeof(buffer), 
-		"fgrep GLIBC_2.3 %s 2>&1 >/dev/null", libcfile );
-	if ( system(buffer) == 0 )
-		return "glibc-2.3";
-
-	snprintf( buffer, sizeof(buffer), 
-			"fgrep GLIBC_2.2 %s 2>&1 >/dev/null", libcfile );
-	if ( system(buffer) == 0 )
-		return "glibc-2.2";
-
-	snprintf( buffer, sizeof(buffer), 
-			"fgrep GLIBC_2.1 %s 2>&1 >/dev/null", libcfile );
-	if ( system(buffer) == 0 )
-		return "glibc-2.1";
-
-	return "glibc-2.0";
+		char buffer[1024];
+#if 0
+		/* We don't need to check for newer glibc, this only creates more problems */
+		snprintf( buffer, sizeof(buffer), 
+				  "fgrep GLIBC_2.3 %s 2>&1 >/dev/null", libcfile );
+		if ( system(buffer) == 0 )
+			return "glibc-2.3";
+		
+		snprintf( buffer, sizeof(buffer), 
+				  "fgrep GLIBC_2.2 %s 2>&1 >/dev/null", libcfile );
+		if ( system(buffer) == 0 )
+			return "glibc-2.2";
+#endif		
+		snprintf( buffer, sizeof(buffer), 
+				  "fgrep GLIBC_2.1 %s 2>&1 >/dev/null", libcfile );
+		if ( system(buffer) == 0 )
+			return "glibc-2.1";
+		
+		return "glibc-2.0";
     }
     /* Default to version 5 */
     return "libc5";
