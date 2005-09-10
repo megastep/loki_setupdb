@@ -1,4 +1,4 @@
-/* $Id: arch.c,v 1.20 2005-08-24 22:02:47 megastep Exp $ */
+/* $Id: arch.c,v 1.21 2005-09-10 00:12:47 megastep Exp $ */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -211,7 +211,8 @@ static int find_string(const char *file, const char *tofind)
 const char *distribution_name[NUM_DISTRIBUTIONS] = {
 	"N/A",
 	"RedHat Linux (or similar)",
-	"Mandrake Linux",
+    "Fedora Core",
+	"Mandrake/Mandriva Linux",
 	"SuSE Linux",
 	"Debian GNU/Linux (or similar)",
 	"Slackware",
@@ -232,6 +233,7 @@ const char *distribution_name[NUM_DISTRIBUTIONS] = {
 const char *distribution_symbol[NUM_DISTRIBUTIONS] = {
 	"none",
 	"redhat",
+    "fedora",
 	"mandrake",
 	"suse",
 	"debian",
@@ -303,6 +305,9 @@ distribution detect_distro(int *maj_ver, int *min_ver)
 	} else if ( !access("/etc/turbolinux-release", F_OK) ) {
 		find_version("/etc/turbolinux-release", maj_ver, min_ver); 
 		return DISTRO_TURBO;
+	} else if ( !access("/etc/fedora-release", F_OK) ) {
+		find_version("/etc/fedora-release", maj_ver, min_ver); 
+		return DISTRO_FEDORA;
 	} else if ( !access("/etc/redhat-release", F_OK) ) {
 		find_version("/etc/redhat-release", maj_ver, min_ver); 
 #if defined(PPC) || defined(powerpc)

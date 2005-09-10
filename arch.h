@@ -45,6 +45,7 @@
 typedef enum {
 	DISTRO_NONE = 0, /* Unrecognized */
 	DISTRO_REDHAT,
+	DISTRO_FEDORA,
 	DISTRO_MANDRAKE,
 	DISTRO_SUSE,
 	DISTRO_DEBIAN,
