@@ -1,3 +1,7 @@
+current:
+Ryan C. Gordon (icculus.org) - Fri Jan 27 16:35:25 EST 2006
+ * Intel Mac support.
+
 1.6.2:
 Ryan C. Gordon (icculus.org) - Sat Feb 14 21:15:26 EST 2004
  * AMD64 patches.

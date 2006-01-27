@@ -22,7 +22,7 @@ elif test -d /opt/codehost/lib; then
 	LIBS="-L/opt/codehost/lib"
 elif test -d /sw/lib; then
 	case "$target" in
-	powerpc-apple-darwin*)
+	*-apple-darwin*)
 		LIBS="-L/sw/lib" ;;
 	esac
 else
@@ -81,12 +81,12 @@ i?86*solaris*)
 *solaris*)
 	EXTRA_LIBS="$EXTRA_LIBS -lsocket -lnsl -lresolv -ldl"
 	ARCH=`uname -p` ;;
-powerpc-apple-darwin*)
+*-apple-darwin*)
 	CFLAGS="-Ddarwin"
 	BSTATIC=""
 	BDYNAMIC=""
 	REENTRANT=""
-	ARCH=ppc ;;
+	ARCH=`uname -p` ;;
 *aix*)
 	BSTATIC=""
 	BDYNAMIC=""
