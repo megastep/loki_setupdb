@@ -31,7 +31,11 @@
 # elif defined(_AIX)
 #   include <sys/machine.h>
 # elif defined(darwin)
-#   include<ppc/endian.h>
+#   ifdef __POWERPC__
+#     include<ppc/endian.h>
+#   else
+#     include<i386/endian.h>
+#   endif
 # else
 #  include <endian.h>
 # endif
