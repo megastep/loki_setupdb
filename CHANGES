@@ -1,4 +1,6 @@
 current:
+Stephane Peter (Codehost) - Tue Feb  7 16:18:42 PST 2006
+ * Support for libxml2 selection at compile time.
 Ryan C. Gordon (icculus.org) - Fri Jan 27 16:35:25 EST 2006
  * Intel Mac support.
 

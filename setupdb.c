@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.74 2005-08-23 00:19:35 megastep Exp $ */
+/* $Id: setupdb.c,v 1.75 2006-02-08 00:22:38 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -17,9 +17,6 @@
 #include <strings.h>
 #endif
 #include <ctype.h>
-#include <parser.h>
-#include <tree.h>
-#include <xmlmemory.h>
 
 #ifdef HAVE_SYS_MKDEV_H
 #include <sys/mkdev.h>
@@ -28,6 +25,7 @@
 #include <sys/sysmacros.h>
 #endif
 
+#include "setup-xml.h"
 #include "setupdb.h"
 #include "arch.h"
 #include "md5.h"
@@ -91,6 +89,22 @@ struct _loki_product_file_t {
     product_file_t *next;
 };
 
+
+#if LIBXML_VERSION < 20000
+/* Implementation of this function that is only in libxml2 */
+int xmlUnsetProp(xmlNodePtr node, const xmlChar *name)
+{
+	xmlAttrPtr att = node->properties;
+	while ( att ) {
+		if ( !strcmp((char *)att->name, (char *)name ) ) {
+			xmlRemoveProp(att);
+			return 1;
+		}
+		att = att->next;
+	}
+	return 0;
+}
+#endif
 
 /* Enumerate all products, returns name or NULL if end of list */
 
