@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.75 2006-02-08 00:22:38 megastep Exp $ */
+/* $Id: setupdb.c,v 1.76 2006-02-09 19:56:46 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -209,7 +209,7 @@ static const char *substitute_xml_string(const char *str)
 
 static const char *get_xml_string(product_t *product, xmlNodePtr node)
 {
-    xmlChar *text = xmlNodeListGetString(product->doc, node->childs, 1);
+    xmlChar *text = xmlNodeListGetString(product->doc, XML_CHILDREN(node), 1);
     return (const char *)text;
 }
 
@@ -393,27 +393,27 @@ product_t *loki_openproduct(const char *name)
     prod->doc = doc;
     prod->changed = 0;
 
-    str = (char *)xmlGetProp(doc->root, BAD_CAST "name");
+    str = (char *)xmlGetProp(XML_ROOT(doc), BAD_CAST "name");
     strncpy(prod->info.name, str, sizeof(prod->info.name));
 	xmlFree(str);
-    str = (char *)xmlGetProp(doc->root, BAD_CAST "desc");
+    str = (char *)xmlGetProp(XML_ROOT(doc), BAD_CAST "desc");
     if ( str ) {
         strncpy(prod->info.description, str, sizeof(prod->info.description));
 		xmlFree(str);
     } else {
         *prod->info.description = '\0';
     }
-    str = (char *)xmlGetProp(doc->root, BAD_CAST "root");
+    str = (char *)xmlGetProp(XML_ROOT(doc), BAD_CAST "root");
     strncpy(prod->info.root, str, sizeof(prod->info.root));
 	xmlFree(str);
-    str = (char *)xmlGetProp(doc->root, BAD_CAST "prefix");
+    str = (char *)xmlGetProp(XML_ROOT(doc), BAD_CAST "prefix");
 	if ( str ) {
 		strncpy(prod->info.prefix, str, sizeof(prod->info.prefix));
 		xmlFree(str);
 	} else {
 		strcpy(prod->info.prefix, ".");
 	}
-    str = (char *)xmlGetProp(doc->root, BAD_CAST "update_url");
+    str = (char *)xmlGetProp(XML_ROOT(doc), BAD_CAST "update_url");
     strncpy(prod->info.url, str, sizeof(prod->info.url));
 	xmlFree(str);
     if ( *name == '/' ) { /* Absolute path to a manifest.ini file */
@@ -425,7 +425,7 @@ product_t *loki_openproduct(const char *name)
     }
 
     /* Check for the xmlversion attribute for backwards compatibility */
-    str = (char *)xmlGetProp(doc->root, BAD_CAST "xmlversion");
+    str = (char *)xmlGetProp(XML_ROOT(doc), BAD_CAST "xmlversion");
     sscanf(str, "%d.%d", &major, &minor);
     if ( (major > SETUPDB_VERSION_MAJOR) || 
          ((major == SETUPDB_VERSION_MAJOR) && (minor > SETUPDB_VERSION_MINOR)) ) {
@@ -439,7 +439,7 @@ product_t *loki_openproduct(const char *name)
 
     /* Parse the XML tags and build a tree. Water every day so that it grows steadily. */
     
-    for ( node = doc->root->childs; node; node = node->next ) {
+    for ( node = XML_CHILDREN(XML_ROOT(doc)); node; node = node->next ) {
         if ( !strcmp((char *)node->name, "component") ) {
             xmlNodePtr optnode;
 
@@ -462,7 +462,7 @@ product_t *loki_openproduct(const char *name)
             comp->next = prod->components;
             prod->components = comp;
 
-            for ( optnode = node->childs; optnode; optnode = optnode->next ) {
+            for ( optnode = XML_CHILDREN(node); optnode; optnode = optnode->next ) {
                 if ( !strcmp((char *)optnode->name, "option") ) {
                     xmlNodePtr filenode;
                     product_option_t *opt = (product_option_t *)malloc(sizeof(product_option_t));
@@ -475,7 +475,7 @@ product_t *loki_openproduct(const char *name)
                     opt->next = comp->options;
                     comp->options = opt;
 
-                    for( filenode = optnode->childs; filenode; filenode = filenode->next ) {
+                    for( filenode = XML_CHILDREN(optnode); filenode; filenode = filenode->next ) {
                         file_type_t t;
                         product_file_t *file = (product_file_t *) malloc(sizeof(product_file_t));
 						const char *cstr;
@@ -661,23 +661,23 @@ product_t *loki_create_product(const char *name, const char *root, const char *d
     prod->components = prod->default_comp = NULL;
 	prod->envvars = NULL;
 
-    doc->root = xmlNewDocNode(doc, NULL, BAD_CAST "product", NULL);
+    XML_ROOT(doc) = xmlNewDocNode(doc, NULL, BAD_CAST "product", NULL);
 
     strncpy(prod->info.name, name, sizeof(prod->info.name));
-    xmlSetProp(doc->root, BAD_CAST "name", BAD_CAST name);
+    xmlSetProp(XML_ROOT(doc), BAD_CAST "name", BAD_CAST name);
     if ( desc ) {
         strncpy(prod->info.description, desc, sizeof(prod->info.description));
-        xmlSetProp(doc->root, BAD_CAST "desc", BAD_CAST desc);
+        xmlSetProp(XML_ROOT(doc), BAD_CAST "desc", BAD_CAST desc);
     } else {
         *prod->info.description = '\0';
     }
     snprintf(homefile, sizeof(homefile), "%d.%d", SETUPDB_VERSION_MAJOR, SETUPDB_VERSION_MINOR);
-    xmlSetProp(doc->root, BAD_CAST "xmlversion", BAD_CAST homefile);
+    xmlSetProp(XML_ROOT(doc), BAD_CAST "xmlversion", BAD_CAST homefile);
     strncpy(prod->info.root, myroot, sizeof(prod->info.root));
-    xmlSetProp(doc->root, BAD_CAST "root", BAD_CAST myroot);
+    xmlSetProp(XML_ROOT(doc), BAD_CAST "root", BAD_CAST myroot);
     strncpy(prod->info.url, url, sizeof(prod->info.url));
     strcpy(prod->info.prefix, ".");
-    xmlSetProp(doc->root, BAD_CAST "update_url", BAD_CAST url);
+    xmlSetProp(XML_ROOT(doc), BAD_CAST "update_url", BAD_CAST url);
     snprintf(prod->info.registry_path, sizeof(prod->info.registry_path), "%s/.manifest/%s.xml",
              myroot, name);
 
@@ -689,7 +689,7 @@ product_t *loki_create_product(const char *name, const char *root, const char *d
 void loki_setroot_product(product_t *product, const char *root)
 {
     strncpy(product->info.root, root, sizeof(product->info.root));
-    xmlSetProp(product->doc->root, BAD_CAST "root", BAD_CAST root);
+    xmlSetProp(XML_ROOT(product->doc), BAD_CAST "root", BAD_CAST root);
     product->changed = 1;
 }
 
@@ -697,7 +697,7 @@ void loki_setroot_product(product_t *product, const char *root)
 void loki_setprefix_product(product_t *product, const char *prefix)
 {
     strncpy(product->info.prefix, prefix, sizeof(product->info.prefix));
-    xmlSetProp(product->doc->root, BAD_CAST "prefix", BAD_CAST prefix);
+    xmlSetProp(XML_ROOT(product->doc), BAD_CAST "prefix", BAD_CAST prefix);
     product->changed = 1;
 }
 
@@ -706,7 +706,7 @@ void loki_setprefix_product(product_t *product, const char *prefix)
 void loki_setupdateurl_product(product_t *product, const char *url)
 {
     strncpy(product->info.url, url, sizeof(product->info.url));
-    xmlSetProp(product->doc->root, BAD_CAST "update_url", BAD_CAST url);
+    xmlSetProp(XML_ROOT(product->doc), BAD_CAST "update_url", BAD_CAST url);
     product->changed = 1;
 }
 
@@ -914,7 +914,7 @@ const char *loki_getmessage_component(product_component_t *comp)
 	xmlNodePtr node;
 
 	/* Look for a <message> tag */
-	for ( node = comp->node->childs; node; node = node->next ) {
+	for ( node = XML_CHILDREN(comp->node); node; node = node->next ) {
 		if ( node->name && !strcmp((char *)node->name, "message") ) {
 			return get_xml_string(comp->product, node);
 		}
@@ -928,7 +928,7 @@ void loki_setmessage_component(product_component_t *comp, const char *msg)
 
 	comp->product->changed = 1;
 	/* Look for a <message> tag */
-	for ( node = comp->node->childs; node; node = node->next ) {
+	for ( node = XML_CHILDREN(comp->node); node; node = node->next ) {
 		if ( node->name && !strcmp((char *)node->name, "message") ) {
 			/* Remove the existing node */
 			xmlUnlinkNode(node);
@@ -974,7 +974,7 @@ void loki_setdefault_component(product_component_t *comp)
 
 product_component_t *loki_create_component(product_t *product, const char *name, const char *version)
 {
-    xmlNodePtr node = xmlNewChild(product->doc->root, NULL, BAD_CAST "component", NULL);
+    xmlNodePtr node = xmlNewChild(XML_ROOT(product->doc), NULL, BAD_CAST "component", NULL);
     if ( node ) {
         product_component_t *ret = (product_component_t *)malloc(sizeof(product_component_t));
         ret->node = node;
@@ -1963,7 +1963,7 @@ static int register_envvar(product_t *product, product_envvar_t **vars, const ch
 			return 0;
 		var->name = strdup(name);
 		var->value = strdup(env);
-		var->node = xmlNewChild(product->doc->root, NULL, BAD_CAST "environment", NULL);
+		var->node = xmlNewChild(XML_ROOT(product->doc), NULL, BAD_CAST "environment", NULL);
 
 		var->next = *vars;
 		*vars = var;
