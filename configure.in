@@ -138,14 +138,22 @@ AC_SUBST(GETOPT_C)
 
 dnl Look for the XML libraries
 
-AC_PATH_PROG(HAVEXML, xml-config, $PATH)
+XMLVER=""
+AC_ARG_WITH(libxml2,
+[  --with-libxml2          use libxml2 [default=libxml1]],
+	,	with_libxml2=yes)
+if test x$with_libxml2 = xyes; then
+	XMLVER="2"
+fi
+
+AC_PATH_PROG(HAVEXML, xml${XMLVER}-config, $PATH)
 if test ! -z "$HAVEXML"; then
     XML_CFLAGS=`$HAVEXML --cflags`
     XML_LIBS=`$HAVEXML --libs`
     XML_PREFIX=`$HAVEXML --prefix`
 
     CFLAGS="$CFLAGS $XML_CFLAGS"
-    LIBS="$LIBS $XML_PREFIX/lib$LIBSUFFIX/libxml.a $BSTATIC $ZLIB $BDYNAMIC $EXTRA_LIBS"
+    LIBS="$LIBS $XML_PREFIX/lib$LIBSUFFIX/libxml${XMLVER}.a $BSTATIC $ZLIB $BDYNAMIC $EXTRA_LIBS"
 else
     AC_MSG_ERROR([*** xml-config not found. You need a working libxml installation.])
 fi

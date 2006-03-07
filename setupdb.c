@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.76 2006-02-09 19:56:46 megastep Exp $ */
+/* $Id: setupdb.c,v 1.77 2006-03-07 00:50:16 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -86,6 +86,9 @@ struct _loki_product_file_t {
         unsigned char md5sum[16];
         script_type_t scr_type;
     } data;
+#ifdef __linux
+	char *se_context; /* SELinux context, optional */
+#endif
     product_file_t *next;
 };
 
@@ -544,6 +547,14 @@ product_t *loki_openproduct(const char *name)
                             file->mode = 0644;
                         }
 						xmlFree(str);
+#ifdef __linux
+						str = (char *)xmlGetProp(filenode, BAD_CAST "secontext");
+						if ( str ) {
+							file->se_context = strdup(str);
+						} else {
+							file->se_context = NULL;
+						}
+#endif
                         cstr = get_xml_string(prod, filenode);
                         file->path = strdup(cstr); /* The expansion is done in loki_getname_file() */
 
@@ -661,7 +672,7 @@ product_t *loki_create_product(const char *name, const char *root, const char *d
     prod->components = prod->default_comp = NULL;
 	prod->envvars = NULL;
 
-    XML_ROOT(doc) = xmlNewDocNode(doc, NULL, BAD_CAST "product", NULL);
+    xmlDocSetRootElement(doc, xmlNewDocNode(doc, NULL, BAD_CAST "product", NULL));
 
     strncpy(prod->info.name, name, sizeof(prod->info.name));
     xmlSetProp(XML_ROOT(doc), BAD_CAST "name", BAD_CAST name);
@@ -757,6 +768,9 @@ int loki_closeproduct(product_t *product)
             while ( file ) {
                 nextfile = file->next;
                 free(file->path);
+#ifdef __linux
+				free(file->se_context);
+#endif
                 free(file);
                 file = nextfile;
             }
@@ -1380,6 +1394,9 @@ static product_file_t *registerfile_new(product_option_t *option, const char *pa
     }
     file = (product_file_t *)malloc(sizeof(product_file_t));
     file->path = strdup(path);
+#ifdef __linux
+	file->se_context = NULL;
+#endif
 	file->desktop = NULL;
     memset(file->data.md5sum, 0, 16);
     if ( S_ISREG(st.st_mode) ) {
@@ -1680,6 +1697,9 @@ static void unregister_file(product_file_t *file, product_file_t **opt)
         }
     }
     free(file->path);
+#ifdef __linux
+	free(file->se_context);
+#endif
     free(file);
 }
 
@@ -1808,6 +1828,9 @@ static product_file_t *registerscript(xmlNodePtr parent, script_type_t type, con
         scr->path = strdup(name);
         scr->type = LOKI_FILE_SCRIPT;
         scr->data.scr_type = type;
+#ifdef __linux
+		scr->se_context = NULL;
+#endif
 		scr->desktop = NULL;
         return scr;
     }

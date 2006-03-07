@@ -1,15 +1,15 @@
 /*
  * Placeholder for libxml/libxml2 libraries, use this header instead.
  *
- * $Id: setup-xml.h,v 1.1 2006-02-08 00:22:38 megastep Exp $ 
+ * $Id: setup-xml.h,v 1.2 2006-03-07 00:50:16 megastep Exp $ 
  */
 
 #ifndef __SETUP_XML_H__
 #define __SETUP_XML_H__
 
-#include <parser.h>
-#include <tree.h>
-#include <xmlmemory.h>
+#include <libxml/parser.h>
+#include <libxml/tree.h>
+#include <libxml/xmlmemory.h>
 
 #if LIBXML_VERSION < 20000
 /* libxml1 */
