@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.77 2006-03-07 00:50:16 megastep Exp $ */
+/* $Id: setupdb.c,v 1.78 2006-03-07 01:18:58 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -473,20 +473,24 @@ product_t *loki_openproduct(const char *name)
                     opt->node = optnode;
                     opt->component = comp;
                     opt->name = (char *)xmlGetProp(optnode, BAD_CAST "name");
-		    opt->tag = (char *)xmlGetProp(optnode, BAD_CAST "tag");
+					opt->tag = (char *)xmlGetProp(optnode, BAD_CAST "tag");
                     opt->files = NULL;
                     opt->next = comp->options;
                     comp->options = opt;
 
                     for( filenode = XML_CHILDREN(optnode); filenode; filenode = filenode->next ) {
                         file_type_t t;
-                        product_file_t *file = (product_file_t *) malloc(sizeof(product_file_t));
+                        product_file_t *file;
 						const char *cstr;
 
+						if ( !XML_CHILDREN(filenode) )
+							continue; /* Skip nodes with no children - likely text nodes */
+
+						file = (product_file_t *) malloc(sizeof(product_file_t));
                         memset(file->data.md5sum, 0, 16);
                         if ( !strcmp((char *)filenode->name, "file") ) {
                             char *md5;
-			    md5 = (char *)xmlGetProp(filenode, BAD_CAST "md5");
+							md5 = (char *)xmlGetProp(filenode, BAD_CAST "md5");
                             t = LOKI_FILE_REGULAR;
                             if ( md5 ) {
                                 memcpy(file->data.md5sum, get_md5_bin(md5), 16);
