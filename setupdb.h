@@ -165,6 +165,10 @@ unsigned int loki_getmode_file(product_file_t *file);
 /* Set the UNIX mode for the file */
 void loki_setmode_file(product_file_t *file, unsigned int mode);
 
+/* SELinux contexts */
+const char *loki_get_secontext_file(product_file_t *file);
+void loki_set_secontext_file(product_file_t *file, const char *context);
+
 /* Get / set the 'patched' attribute of a file, i.e. it should not be removed unless
    the whole application is removed */
 int loki_getpatched_file(product_file_t *file);

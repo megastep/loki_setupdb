@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.78 2006-03-07 01:18:58 megastep Exp $ */
+/* $Id: setupdb.c,v 1.79 2006-03-07 01:32:33 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -1292,6 +1292,24 @@ void loki_setmode_file(product_file_t *file, unsigned int mode)
     snprintf(buf, sizeof(buf), "%04o", mode);
     xmlSetProp(file->node, BAD_CAST "mode", BAD_CAST buf);
     file->option->component->product->changed = 1;
+}
+
+const char *loki_get_secontext_file(product_file_t *file)
+{
+#ifdef __linux
+	return file->se_context;
+#else
+	return NULL;
+#endif
+}
+
+void loki_set_secontext_file(product_file_t *file, const char *context)
+{
+#ifdef __linux
+	file->se_context = strdup(context);
+    xmlSetProp(file->node, BAD_CAST "secontext", BAD_CAST context);
+    file->option->component->product->changed = 1;
+#endif
 }
 
 /* Get / set the 'patched' attribute of a flag, i.e. it should not be removed unless
