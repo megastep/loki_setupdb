@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.79 2006-03-07 01:32:33 megastep Exp $ */
+/* $Id: setupdb.c,v 1.80 2006-03-09 01:14:52 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -739,7 +739,7 @@ int loki_closeproduct(product_t *product)
 #if 1
         char tmp[PATH_MAX];
         /* This isn't harmful as long as it's not a world writeable directory */
-        snprintf(tmp, sizeof(tmp), "%s.%05d", product->info.registry_path, getpid());
+        snprintf(tmp, sizeof(tmp), "%s.%05d", product->info.registry_path, (int)getpid());
         /* Write XML file to disk if it has changed */
         xmlSaveFile(tmp, product->doc);
 
