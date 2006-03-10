@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.80 2006-03-09 01:14:52 megastep Exp $ */
+/* $Id: setupdb.c,v 1.81 2006-03-10 00:29:56 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -146,18 +146,31 @@ const char *loki_basename(const char *file)
 	return file;
 }
 
-/* Remove the install path component from the filename to obtain a relative path */
-const char *loki_remove_root(const product_t *prod, const char *path)
+/* Remove the root directory from the filename to obtain a relative path */
+const char *loki_remove_dirroot(const char *dir, const char *path)
 {
-	if ( prod ) {
-		if ( !strcmp(path, prod->info.root) )
+	if ( dir ) {
+		if ( !strcmp(path, dir) )
 			return "";
-		if ( strstr(path, prod->info.root) == path) {
-			path += strlen(prod->info.root) + 1;
+		if ( strstr(path, dir) == path) {
+			path += strlen(dir) + 1;
 			/* Remove any extraneous slashes */
 			while ( *path && *path == '/' )
 				path ++;
 		}
+	}
+	/* Remove ./ if it is following */
+	if ( path[0]=='.' && path[1]=='/') {
+		path += 2;
+	}
+	return path;
+}
+
+/* Remove the install path component from the filename to obtain a relative path */
+const char *loki_remove_root(const product_t *prod, const char *path)
+{
+	if ( prod ) {
+		return loki_remove_dirroot(prod->info.root, path);
 	}
 	/* Remove ./ if it is following */
 	if ( path[0]=='.' && path[1]=='/') {

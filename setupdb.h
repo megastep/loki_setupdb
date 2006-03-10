@@ -195,6 +195,8 @@ int loki_enumerate_files(product_option_t *opt, product_file_cb cb);
 
 product_file_t *loki_findpath(const char *path, product_t *product);
 
+/* Remove the root directory from the filename to obtain a relative path */
+const char *loki_remove_dirroot(const char *dir, const char *path);
 /* Remove the install path component from the filename to obtain a relative path */
 const char *loki_remove_root(const product_t *prod, const char *path);
 
