@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.81 2006-03-10 00:29:56 megastep Exp $ */
+/* $Id: setupdb.c,v 1.82 2006-03-10 18:39:41 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -378,6 +378,8 @@ product_t *loki_openproduct(const char *name)
     xmlNodePtr node;
     product_t *prod;
 
+	LIBXML_TEST_VERSION;
+
     if ( strchr(name, '/') != NULL ) { /* Absolute path to a manifest file */
         doc = xmlParseFile(name);
     } else {
@@ -754,7 +756,7 @@ int loki_closeproduct(product_t *product)
         /* This isn't harmful as long as it's not a world writeable directory */
         snprintf(tmp, sizeof(tmp), "%s.%05d", product->info.registry_path, (int)getpid());
         /* Write XML file to disk if it has changed */
-        xmlSaveFile(tmp, product->doc);
+        XML_SAVE_FILE(tmp, product->doc);
 
         if(rename(tmp, product->info.registry_path) != 0)
         {
@@ -764,7 +766,7 @@ int loki_closeproduct(product_t *product)
             ret = -1;
         }
 #else
-        xmlSaveFile(product->info.registry_path, product->doc);
+        XML_SAVE_FILE(product->info.registry_path, product->doc);
 #endif
     }
 
