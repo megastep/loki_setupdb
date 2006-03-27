@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.82 2006-03-10 18:39:41 megastep Exp $ */
+/* $Id: setupdb.c,v 1.83 2006-03-27 23:20:04 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -2441,18 +2441,22 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
 
                 "if which " LOKI_PREFIX "-uninstall 2> /dev/null > /dev/null || type -p "
 				LOKI_PREFIX "-uninstall 2> /dev/null > /dev/null; then\n"
-                "    UNINSTALL=" LOKI_PREFIX "-uninstall\n"
+				"    if " LOKI_PREFIX "-uninstall -v > /dev/null 2> /dwv/null; then\n"
+                "        UNINSTALL=" LOKI_PREFIX "-uninstall\n"
+				"    else\n"
+                "        UNINSTALL=\"$HOME/" LOKI_DIRNAME "/installed/bin/`DetectOS`/`DetectARCH`/uninstall\"\n"
+				"    fi\n"
                 "else\n"
                 "    UNINSTALL=\"$HOME/" LOKI_DIRNAME "/installed/bin/`DetectOS`/`DetectARCH`/uninstall\"\n"
-                "    if test ! -x \"$UNINSTALL\" ; then\n"
-                "        echo Could not find a usable uninstall program. Aborting.\n"
-                "        exit 1\n"
-                "    fi\n"
+                "fi\n"
+                "if test ! -x \"$UNINSTALL\" ; then\n"
+                "    echo Could not find a usable uninstall program. Aborting.\n"
+                "    exit 1\n"
                 "fi\n"
                 "\"$UNINSTALL\" -L %s \"%s\" \"$1\"",
                 SETUPDB_VERSION_MAJOR, SETUPDB_VERSION_MINOR,
 				pinfo->name,
-                pinfo->registry_path);
+                pinfo->registry_path);un
         fchmod(fileno(scr), 0755);
         fclose(scr);
     } else {
