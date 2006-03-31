@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.84 2006-03-28 00:28:07 megastep Exp $ */
+/* $Id: setupdb.c,v 1.85 2006-03-31 22:41:38 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -2441,7 +2441,7 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
 
                 "if which " LOKI_PREFIX "-uninstall 2> /dev/null > /dev/null || type -p "
 				LOKI_PREFIX "-uninstall 2> /dev/null > /dev/null; then\n"
-				"    if " LOKI_PREFIX "-uninstall -v > /dev/null 2> /dwv/null; then\n"
+				"    if " LOKI_PREFIX "-uninstall -v > /dev/null 2> /dev/null; then\n"
                 "        UNINSTALL=" LOKI_PREFIX "-uninstall\n"
 				"    else\n"
                 "        UNINSTALL=\"$HOME/" LOKI_DIRNAME "/installed/bin/`DetectOS`/`DetectARCH`/uninstall\"\n"
