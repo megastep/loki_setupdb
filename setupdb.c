@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.86 2006-04-07 19:25:24 megastep Exp $ */
+/* $Id: setupdb.c,v 1.87 2006-05-18 15:43:04 icculus Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -2439,21 +2439,36 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
 				"  return 0\n"
 				"}\n\n"
 
-                "if which " LOKI_PREFIX "-uninstall 2> /dev/null > /dev/null || type -p "
-				LOKI_PREFIX "-uninstall 2> /dev/null > /dev/null; then\n"
-				"    if " LOKI_PREFIX "-uninstall -v > /dev/null 2> /dev/null; then\n"
-                "        UNINSTALL=`exec 2>&-; which " LOKI_PREFIX "-uninstall || type " LOKI_PREFIX "-uninstall`\n"
+				"FindBinary()\n"
+				"{\n"
+				"  arch=$1\n"
+				"  if which loki-uninstall 2> /dev/null > /dev/null || type -p loki-uninstall 2> /dev/null > /dev/null; then\n"
+				"    if loki-uninstall -v > /dev/null 2> /dev/null; then\n"
+				"        echo `exec 2>&-; which loki-uninstall || type loki-uninstall`\n"
 				"    else\n"
-                "        UNINSTALL=\"$HOME/" LOKI_DIRNAME "/installed/bin/`DetectOS`/`DetectARCH`/uninstall\"\n"
+				"        echo \"$HOME/.loki/installed/bin/`DetectOS`/$arch/uninstall\"\n"
 				"    fi\n"
-                "else\n"
-                "    UNINSTALL=\"$HOME/" LOKI_DIRNAME "/installed/bin/`DetectOS`/`DetectARCH`/uninstall\"\n"
-                "fi\n"
-                "if test ! -x \"$UNINSTALL\" ; then\n"
-                "    echo Could not find a usable uninstall program. Aborting.\n"
-                "    exit 1\n"
-                "fi\n"
-                "\"$UNINSTALL\" -L %s \"%s\" \"$1\"",
+				"  else\n"
+				"    echo \"$HOME/.loki/installed/bin/`DetectOS`/$arch/uninstall\"\n"
+				"  fi\n"
+				"}\n\n"
+
+				"arch=`DetectARCH`\n"
+				"UNINSTALL=`FindBinary $arch`\n"
+				"\n"
+				"# Special case: if amd64 and binary is missing, try to run x86 build...\n"
+				"if test ! -x \"$UNINSTALL\" ; then\n"
+				"  if test \"$arch\" = amd64 ; then\n"
+				"    UNINSTALL=`FindBinary x86`\n"
+				"  fi\n"
+				"fi\n\n"
+
+				"if test ! -x \"$UNINSTALL\" ; then\n"
+				"    echo Could not find a usable uninstall program. Aborting.\n"
+				"    exit 1\n"
+				"fi\n\n"
+
+                "exec \"$UNINSTALL\" -L %s \"%s\" \"$1\"\n\n",
                 SETUPDB_VERSION_MAJOR, SETUPDB_VERSION_MINOR,
 				pinfo->name,
                 pinfo->registry_path);

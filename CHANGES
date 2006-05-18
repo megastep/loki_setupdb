@@ -1,4 +1,7 @@
 current:
+Ryan C. Gordon (???) - Thu May 18 08:35:16 PDT 2006
+ * Generated uninstall script will try falling back to x86 binaries on
+   amd64 if native binaries don't exist.
 Stephane Peter (Codehost) - Mon Mar  6 16:49:25 PST 2006
  * Support for storing optional SELinux context for files
  * Working libxml2 support
