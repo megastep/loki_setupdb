@@ -66,6 +66,7 @@ typedef enum {
 	DISTRO_SCO,
 	DISTRO_AIX,
 	DISTRO_DARWIN,
+	DISTRO_UBUNTU,
 	NUM_DISTRIBUTIONS
 } distribution;
 

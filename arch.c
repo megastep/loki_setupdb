@@ -1,4 +1,4 @@
-/* $Id: arch.c,v 1.21 2005-09-10 00:12:47 megastep Exp $ */
+/* $Id: arch.c,v 1.22 2006-06-07 00:12:42 megastep Exp $ */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -109,7 +109,17 @@ const char *detect_libc(void)
 				  "fgrep GLIBC_2.1 %s 2>&1 >/dev/null", libcfile );
 		if ( system(buffer) == 0 )
 			return "glibc-2.1";
-		
+
+		/* Fallback - some newer distros don't even define 2.1 anymore */
+		snprintf( buffer, sizeof(buffer), 
+				  "fgrep GLIBC_2.2 %s 2>&1 >/dev/null", libcfile );
+		if ( system(buffer) == 0 )
+			return "glibc-2.1"; /* Intentional! */
+		snprintf( buffer, sizeof(buffer), 
+				  "fgrep GLIBC_2.3 %s 2>&1 >/dev/null", libcfile );
+		if ( system(buffer) == 0 )
+			return "glibc-2.1"; /* Intentional! */
+
 		return "glibc-2.0";
     }
     /* Default to version 5 */
@@ -227,7 +237,8 @@ const char *distribution_name[NUM_DISTRIBUTIONS] = {
 	"SGI IRIX",
 	"SCO UnixWare/OpenServer",
 	"IBM AIX",
-	"MacOS X / Darwin"
+	"MacOS X / Darwin",
+	"Ubuntu Linux"
 };
 
 const char *distribution_symbol[NUM_DISTRIBUTIONS] = {
@@ -249,7 +260,8 @@ const char *distribution_symbol[NUM_DISTRIBUTIONS] = {
 	"irix",
 	"sco",
 	"aix",
-	"darwin"
+	"darwin",
+	"ubuntu"
 };
 
 /* Detect the distribution type and version */
@@ -319,7 +331,11 @@ distribution detect_distro(int *maj_ver, int *min_ver)
 		return DISTRO_REDHAT;
 	} else if ( !access("/etc/debian_version", F_OK) ) {
 		find_version("/etc/debian_version", maj_ver, min_ver); 
-		return DISTRO_DEBIAN;
+		if ( access("/usr/share/doc/ubuntu-base", F_OK) ) {
+			return DISTRO_DEBIAN;
+		} else {
+			return DISTRO_UBUNTU;
+		}
 	} else if ( !access("/etc/slackware-version", F_OK) ) {
 		find_version("/etc/slackware-version", maj_ver, min_ver);
 		return DISTRO_SLACKWARE;

@@ -1,4 +1,6 @@
 current:
+Stephane Peter (Codehost) - Tue Jun  6 16:59:03 PDT 2006
+ * Improved glibc detection on newer distros (Ubuntu)
 Ryan C. Gordon (???) - Thu May 18 08:35:16 PDT 2006
  * Generated uninstall script will try falling back to x86 binaries on
    amd64 if native binaries don't exist.
