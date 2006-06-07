@@ -1,12 +1,13 @@
 /* Command-line utility to manipulate product entries from scripts */
 
-/* $Id: register.c,v 1.14 2005-02-05 02:05:34 megastep Exp $ */
+/* $Id: register.c,v 1.15 2006-06-07 23:20:06 megastep Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
 
+#include "arch.h"
 #include "setupdb.h"
 
 product_t *product;
@@ -14,25 +15,27 @@ product_t *product;
 void print_usage(const char *argv0)
 {
     printf("Usage: %s <product> [command] [args]\n"
-			"Recognized commands are :\n"
-			"   create <component> <version> [option_name [option_tag]]\n"
-			"      Create a new component and/or option in the component\n"
-			"   add <component> <option> [file [file ...]]\n"
-			"      Register files in the component / option\n"
-			"   script <component> <pre|post> <name> <path-to-script>\n"
-			"      Register a new pre/post-uninstall script for the component\n"
-			"   update <component> <option> <files>\n"
-			"      Updates registration information\n"
-			"   message <component> <\"message\">\n"
-			"      Add an uninstallation warning message to the component\n"
-			"   remove file [file [file ...]]\n"
-			"      Remove specified files from the product\n"
-			"   listfiles [component]\n"
-			"      List files installed under product [or component]\n"
-		    "   desktop <component> <binary>\n"
-		    "      List all desktop items installed for a binary\n"
-			"   printtags [component]\n"
-			"      Print installed option tags\n",
+		   "Recognized commands are :\n"
+		   "   create <component> <version> [option_name [option_tag]]\n"
+		   "      Create a new component and/or option in the component\n"
+		   "   add <component> <option> [file [file ...]]\n"
+		   "      Register files in the component / option\n"
+		   "   script <component> <pre|post> <name> <path-to-script>\n"
+		   "      Register a new pre/post-uninstall script for the component\n"
+		   "   update <component> <option> <files>\n"
+		   "      Updates registration information\n"
+		   "   message <component> <\"message\">\n"
+		   "      Add an uninstallation warning message to the component\n"
+		   "   remove file [file [file ...]]\n"
+		   "      Remove specified files from the product\n"
+		   "   listfiles [component]\n"
+		   "      List files installed under product [or component]\n"
+		   "   desktop <component> <binary>\n"
+		   "      List all desktop items installed for a binary\n"
+		   "   printtags [component]\n"
+		   "      Print installed option tags\n"
+		   "   sysinfo\n"
+		   "      Print out system information as detected.\n",
            argv0);
 }
 
@@ -299,6 +302,12 @@ int main(int argc, char **argv)
 		}
 	} else if ( !strcmp(argv[2], "printtags") ) {
 		ret = printtags(argv[3]);
+	} else if ( !strcmp(argv[2], "sysinfo") ) {
+		int maj = 0, min = 0;
+		distribution distro = detect_distro(&maj, &min);
+		printf("OS='%s' Distro='%s' Ver=%d.%d Arch='%s' Libc='%s'\n", detect_os(), 
+			   distribution_name[distro], maj, min,
+			   detect_arch(), detect_libc());
     } else {
         print_usage(argv[0]);
     }
