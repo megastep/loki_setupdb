@@ -1,6 +1,6 @@
 /* Command-line utility to manipulate product entries from scripts */
 
-/* $Id: register.c,v 1.15 2006-06-07 23:20:06 megastep Exp $ */
+/* $Id: register.c,v 1.16 2006-06-07 23:35:45 megastep Exp $ */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -251,6 +251,15 @@ int main(int argc, char **argv)
         return 1;
     }
 
+	if ( !strcmp(argv[2], "sysinfo") ) {
+		int maj = 0, min = 0;
+		distribution distro = detect_distro(&maj, &min);
+		printf("OS='%s' Distro='%s' Ver=%d.%d Arch='%s' Libc='%s'\n", detect_os(), 
+			   distribution_name[distro], maj, min,
+			   detect_arch(), detect_libc());
+		return 0;
+	}
+
     product = loki_openproduct(argv[1]);
     if ( ! product ) {
         fprintf(stderr,"Unable to open product %s\n", argv[1]);
@@ -302,12 +311,6 @@ int main(int argc, char **argv)
 		}
 	} else if ( !strcmp(argv[2], "printtags") ) {
 		ret = printtags(argv[3]);
-	} else if ( !strcmp(argv[2], "sysinfo") ) {
-		int maj = 0, min = 0;
-		distribution distro = detect_distro(&maj, &min);
-		printf("OS='%s' Distro='%s' Ver=%d.%d Arch='%s' Libc='%s'\n", detect_os(), 
-			   distribution_name[distro], maj, min,
-			   detect_arch(), detect_libc());
     } else {
         print_usage(argv[0]);
     }
