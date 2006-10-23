@@ -144,14 +144,21 @@ AC_ARG_WITH(libxml2,
 	,	with_libxml2=no)
 if test x$with_libxml2 != xno; then
 	XMLVER="2"
-	EXTRA_LIBS="$EXTRA_LIBS -lm"
 fi
 
 AC_PATH_PROG(HAVEXML, xml${XMLVER}-config, $PATH)
 if test ! -z "$HAVEXML"; then
     XML_CFLAGS=`$HAVEXML --cflags`
-    XML_LIBS=`$HAVEXML --libs`
     XML_PREFIX=`$HAVEXML --prefix`
+
+	if "$HAVEXML" --help|grep libtool-libs > /dev/null; then
+		XML_LIBTOOL=`$HAVEXML --libtool-libs`
+		. "$XML_LIBTOOL"
+		XML_LIBS="$dependency_libs"
+	elif "$HAVEXML" --libs | grep thread > /dev/null; then
+		XML_LIBS="$PTHREAD -lm"
+	fi
+	EXTRA_LIBS="$EXTRA_LIBS $XML_LIBS"
 
     CFLAGS="$CFLAGS $XML_CFLAGS"
     LIBS="$LIBS $XML_PREFIX/lib$LIBSUFFIX/libxml${XMLVER}.a $BSTATIC $ZLIB $BDYNAMIC $EXTRA_LIBS"
