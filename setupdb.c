@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.87 2006-05-18 15:43:04 icculus Exp $ */
+/* $Id: setupdb.c,v 1.88 2006-12-12 20:02:52 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -646,11 +646,11 @@ product_t *loki_create_product(const char *name, const char *root, const char *d
 	snprintf(homefile, sizeof(homefile), "%s/" LOKI_DIRNAME, detect_home());
 	mkdir(homefile, 0700);
 
-	strncat(homefile, "/installed", sizeof(homefile)-strlen(homefile));
+	strncat(homefile, "/installed", sizeof(homefile)-strlen(homefile)-1);
 	mkdir(homefile, 0700);
 
-	strncat(homefile, "/", sizeof(homefile)-strlen(homefile));
-	strncat(homefile, get_xml_base(), sizeof(homefile)-strlen(homefile));
+	strncat(homefile, "/", sizeof(homefile)-strlen(homefile)-1);
+	strncat(homefile, get_xml_base(), sizeof(homefile)-strlen(homefile)-1);
 	mkdir(homefile, 0700);
 
 	/* Clean up the root - it can't have a trailing slash */
@@ -667,13 +667,13 @@ product_t *loki_create_product(const char *name, const char *root, const char *d
         return NULL;
     }
 
-	strncat(homefile, "/", sizeof(homefile)-strlen(homefile));
-	strncat(homefile, name, sizeof(homefile)-strlen(homefile));
-	strncat(homefile, ".xml", sizeof(homefile)-strlen(homefile));
+	strncat(homefile, "/", sizeof(homefile)-strlen(homefile)-1);
+	strncat(homefile, name, sizeof(homefile)-strlen(homefile)-1);
+	strncat(homefile, ".xml", sizeof(homefile)-strlen(homefile)-1);
 
-	strncat(manifest, "/", sizeof(manifest)-strlen(manifest));
-	strncat(manifest, name, sizeof(manifest)-strlen(manifest));
-	strncat(manifest, ".xml", sizeof(manifest)-strlen(manifest));
+	strncat(manifest, "/", sizeof(manifest)-strlen(manifest)-1);
+	strncat(manifest, name, sizeof(manifest)-strlen(manifest)-1);
+	strncat(manifest, ".xml", sizeof(manifest)-strlen(manifest)-1);
 
 
     /* Symlink the file in the 'installed' per-user directory */
@@ -2258,15 +2258,15 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
     snprintf(binpath, sizeof(binpath), "%s/" LOKI_DIRNAME "/installed/bin", detect_home());
     mkdir(binpath, 0755);
 
-    strncat(binpath, "/", sizeof(binpath));
-    strncat(binpath, os_name, sizeof(binpath));
+    strncat(binpath, "/", sizeof(binpath)-strlen(binpath)-1);
+    strncat(binpath, os_name, sizeof(binpath)-strlen(binpath)-1);
     mkdir(binpath, 0755);
 
-    strncat(binpath, "/", sizeof(binpath));
-    strncat(binpath, detect_arch(), sizeof(binpath));
+    strncat(binpath, "/", sizeof(binpath)-strlen(binpath)-1);
+    strncat(binpath, detect_arch(), sizeof(binpath)-strlen(binpath)-1);
     mkdir(binpath, 0755);
 
-    strncat(binpath, "/uninstall", sizeof(binpath));
+    strncat(binpath, "/uninstall", sizeof(binpath)-strlen(binpath)-1);
 
     if ( !access(binpath, X_OK) && !access(src_bins, R_OK) ) {
         char cmd[PATH_MAX];
@@ -2369,7 +2369,7 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
 						 lang);
 				mkdir(binpath, 0755);
 				
-				strncat(binpath, "/LC_MESSAGES", sizeof(binpath));
+				strncat(binpath, "/LC_MESSAGES", sizeof(binpath)-strlen(binpath)-1);
 				mkdir(binpath, 0755);
 
 				snprintf(binpath, sizeof(binpath),
