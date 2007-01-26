@@ -1,5 +1,5 @@
 /* Implementation of the Loki Product DB API */
-/* $Id: setupdb.c,v 1.88 2006-12-12 20:02:52 megastep Exp $ */
+/* $Id: setupdb.c,v 1.89 2007-01-26 03:01:22 megastep Exp $ */
 
 #include "config.h"
 #include <glob.h>
@@ -2442,14 +2442,14 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
 				"FindBinary()\n"
 				"{\n"
 				"  arch=$1\n"
-				"  if which loki-uninstall 2> /dev/null > /dev/null || type -p loki-uninstall 2> /dev/null > /dev/null; then\n"
-				"    if loki-uninstall -v > /dev/null 2> /dev/null; then\n"
-				"        echo `exec 2>&-; which loki-uninstall || type loki-uninstall`\n"
+				"  if which " LOKI_PREFIX "-uninstall 2> /dev/null > /dev/null || type -p " LOKI_PREFIX "-uninstall 2> /dev/null > /dev/null; then\n"
+				"    if " LOKI_PREFIX "-uninstall -v > /dev/null 2> /dev/null; then\n"
+				"        echo `exec 2>&-; which " LOKI_PREFIX "-uninstall || type " LOKI_PREFIX "-uninstall`\n"
 				"    else\n"
-				"        echo \"$HOME/.loki/installed/bin/`DetectOS`/$arch/uninstall\"\n"
+				"        echo \"$HOME/" LOKI_DIRNAME "/installed/bin/`DetectOS`/$arch/uninstall\"\n"
 				"    fi\n"
 				"  else\n"
-				"    echo \"$HOME/.loki/installed/bin/`DetectOS`/$arch/uninstall\"\n"
+				"    echo \"$HOME/" LOKI_DIRNAME "/installed/bin/`DetectOS`/$arch/uninstall\"\n"
 				"  fi\n"
 				"}\n\n"
 
