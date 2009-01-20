@@ -1,4 +1,4 @@
-/* $Id: arch.c,v 1.22 2006-06-07 00:12:42 megastep Exp $ */
+/* $Id: arch.c,v 1.23 2009-01-20 23:22:48 megastep Exp $ */
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -272,7 +272,7 @@ distribution detect_distro(int *maj_ver, int *min_ver)
 	uname(&n);
 	sscanf(n.release, "%d.%d", maj_ver, min_ver);
 	return DISTRO_SOLARIS;
-#elif defined(__hpux)
+#elif defined(hpux)
 	struct utsname n;
 	uname(&n);
 	sscanf(n.release, "%*c.%d.%d", maj_ver, min_ver);

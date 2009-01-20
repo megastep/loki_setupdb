@@ -66,7 +66,7 @@ case "$target" in
 	EXTRA_LIBS="$EXTRA_LIBS -L/udk/usr/lib -lsocket -lnsl -lresolv -lgen"
 	ARCH=x86 ;;
 hppa*)
-	CFLAGS="$CFLAGS -I/opt/zlib/include"
+	CFLAGS="$CFLAGS -I/opt/zlib/include -Dhpux -Dhppa"
 	EXTRA_LIBS="$EXTRA_LIBS -ldld"
 	STATIC="-Wl,-E"
 	BSTATIC=""
