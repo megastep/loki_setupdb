@@ -162,6 +162,8 @@ if test ! -z "$HAVEXML"; then
 		fi
 	elif "$HAVEXML" --libs | grep thread > /dev/null; then
 		XML_LIBS="$PTHREAD -lm"
+	else
+		XML_LIBS="-lm"
 	fi
 	EXTRA_LIBS="$EXTRA_LIBS $XML_LIBS"
 
