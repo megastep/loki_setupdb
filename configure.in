@@ -65,13 +65,22 @@ case "$target" in
 	CFLAGS="$CFLAGS -Dsco"
 	EXTRA_LIBS="$EXTRA_LIBS -L/udk/usr/lib -lsocket -lnsl -lresolv -lgen"
 	ARCH=x86 ;;
-hppa*)
+hppa*hpux*)
 	CFLAGS="$CFLAGS -I/opt/zlib/include -Dhpux -Dhppa"
 	EXTRA_LIBS="$EXTRA_LIBS -ldld"
 	STATIC="-Wl,-E"
 	BSTATIC=""
 	BDYNAMIC="-Wl,-a,archive_shared"
 	ARCH=hppa ;;
+ia64*hpux*)
+	LIBSUFFIX=/hpux32
+	CFLAGS="$CFLAGS -I/usr/local/include -Dhpux -Dia64"
+	EXTRA_LIBS="$EXTRA_LIBS -ldld"
+	LIBS="-L/usr/local/lib$LIBSUFFIX $LIBS"
+	STATIC="-Wl,-E"
+	BSTATIC=""
+	BDYNAMIC="-Wl,-a,archive_shared"
+	ARCH=ia64 ;;
 *sgi*)
         LIBSUFFIX=32
 	EXTRA_LIBS="$EXTRA_LIBS -L/usr/freeware/lib$LIBSUFFIX"
