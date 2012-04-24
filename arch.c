@@ -38,6 +38,8 @@ const char *detect_arch(void)
 #endif
 #elif defined(hppa)
 	arch = "hppa";
+#elif defined(ia64)
+	arch = "ia64";
 #elif defined(__arm__)
         arch = "arm";
 #elif defined(mips)
@@ -221,7 +223,7 @@ static int find_string(const char *file, const char *tofind)
 const char *distribution_name[NUM_DISTRIBUTIONS] = {
 	"N/A",
 	"RedHat Linux (or similar)",
-    "Fedora Core",
+    	"Fedora",
 	"Mandrake/Mandriva Linux",
 	"SuSE Linux",
 	"Debian GNU/Linux (or similar)",
@@ -244,7 +246,7 @@ const char *distribution_name[NUM_DISTRIBUTIONS] = {
 const char *distribution_symbol[NUM_DISTRIBUTIONS] = {
 	"none",
 	"redhat",
-    "fedora",
+    	"fedora",
 	"mandrake",
 	"suse",
 	"debian",
