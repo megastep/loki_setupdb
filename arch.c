@@ -69,6 +69,9 @@ const char *detect_libc(void)
 {
 #ifdef __linux
     static const char *libclist[] = {
+#ifdef _LP64
+        "/lib64/libc.so.6",
+#endif
         "/lib/libc.so.6",
         "/lib/libc.so.6.1",
         "/lib/libc.so.6.2",
