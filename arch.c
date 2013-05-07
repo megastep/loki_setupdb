@@ -336,7 +336,7 @@ distribution detect_distro(int *maj_ver, int *min_ver)
 		return DISTRO_REDHAT;
 	} else if ( !access("/etc/debian_version", F_OK) ) {
 		find_version("/etc/debian_version", maj_ver, min_ver); 
-		if ( access("/usr/share/doc/ubuntu-base", F_OK) ) {
+		if ( access("/usr/share/doc/ubuntu-standard", F_OK) ) {
 			return DISTRO_DEBIAN;
 		} else {
 			return DISTRO_UBUNTU;
