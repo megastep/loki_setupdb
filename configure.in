@@ -59,6 +59,7 @@ LIBSUFFIX=""
 BSTATIC="-Wl,-Bstatic"
 BDYNAMIC="-Wl,-Bdynamic"
 
+
 dnl Set the architecture flag
 case "$target" in
 *i?86*OpenUNIX* | *i?86*sco*)
@@ -122,6 +123,10 @@ i?86*solaris*)
 	;;
 esac
 
+AC_CHECK_LIB(iconv, iconv_open,
+	LIBINTL="-liconv"
+)	
+
 ZLIB=${ZLIB:--lz}
 
 dnl Add architecture-specific compile flags
@@ -177,7 +182,7 @@ if test ! -z "$HAVEXML"; then
 	EXTRA_LIBS="$EXTRA_LIBS $XML_LIBS"
 
     CFLAGS="$CFLAGS $XML_CFLAGS"
-    LIBS="$LIBS $XML_PREFIX/lib$LIBSUFFIX/libxml${XMLVER}.a $BSTATIC $ZLIB $BDYNAMIC $EXTRA_LIBS"
+    LIBS="$LIBS $XML_PREFIX/lib$LIBSUFFIX/libxml${XMLVER}.a $BSTATIC $ZLIB $LIBINTL $BDYNAMIC $EXTRA_LIBS"
 else
     AC_MSG_ERROR([*** xml-config not found. You need a working libxml installation.])
 fi
