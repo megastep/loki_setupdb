@@ -64,74 +64,10 @@ const char *detect_os(void)
     return buf.sysname;
 }
 
-/* Function to detect the current version of libc */
+/* Function to detect the current version of libc - no longer needed */
 const char *detect_libc(void)
 {
-#ifdef __linux
-    static const char *libclist[] = {
-#ifdef _LP64
-        "/lib64/libc.so.6",
-#endif
-        "/lib/libc.so.6",
-        "/lib/libc.so.6.1",
-        "/lib/libc.so.6.2",
-        NULL
-    };
-    int i;
-    const char *libc;
-    const char *libcfile;
-
-    /* See if there is an environment override */
-    libc = getenv("SETUP_LIBC");
-    if ( libc != NULL ) {
-        return(libc);
-    }
-
-    /* Look for the highest version of libc */
-    for ( i=0; libclist[i]; ++i ) {
-        if ( access(libclist[i], F_OK) == 0 ) {
-            break;
-        }
-    }
-    libcfile = libclist[i];
-
-    if ( libcfile )
-    {
-		char buffer[1024];
-#if 0
-		/* We don't need to check for newer glibc, this only creates more problems */
-		snprintf( buffer, sizeof(buffer), 
-				  "fgrep GLIBC_2.3 %s 2>&1 >/dev/null", libcfile );
-		if ( system(buffer) == 0 )
-			return "glibc-2.3";
-		
-		snprintf( buffer, sizeof(buffer), 
-				  "fgrep GLIBC_2.2 %s 2>&1 >/dev/null", libcfile );
-		if ( system(buffer) == 0 )
-			return "glibc-2.2";
-#endif		
-		snprintf( buffer, sizeof(buffer), 
-				  "fgrep GLIBC_2.1 %s 2>&1 >/dev/null", libcfile );
-		if ( system(buffer) == 0 )
-			return "glibc-2.1";
-
-		/* Fallback - some newer distros don't even define 2.1 anymore */
-		snprintf( buffer, sizeof(buffer), 
-				  "fgrep GLIBC_2.2 %s 2>&1 >/dev/null", libcfile );
-		if ( system(buffer) == 0 )
-			return "glibc-2.1"; /* Intentional! */
-		snprintf( buffer, sizeof(buffer), 
-				  "fgrep GLIBC_2.3 %s 2>&1 >/dev/null", libcfile );
-		if ( system(buffer) == 0 )
-			return "glibc-2.1"; /* Intentional! */
-
-		return "glibc-2.0";
-    }
-    /* Default to version 5 */
-    return "libc5";
-#else
 	return "glibc-2.1";
-#endif
 }
 
 /* Function that returns the current user's home directory */
@@ -269,7 +205,7 @@ const char *distribution_symbol[NUM_DISTRIBUTIONS] = {
 	"ubuntu"
 };
 
-/* Detect the distribution type and version */
+/* Detect the distribution type and version - should really use LSB here */
 distribution detect_distro(int *maj_ver, int *min_ver)
 {
 #if defined(__sun) && defined(__svr4__)
