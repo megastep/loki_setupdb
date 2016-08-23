@@ -7,3 +7,4 @@ config.status
 configure
 setupdb
 x86_64
+amd64
