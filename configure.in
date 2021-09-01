@@ -1,5 +1,5 @@
 AC_INIT
-AC_CONFIG_HEADER(config.h)
+AC_CONFIG_HEADERS([config.h])
 
 dnl Define the release numbers here
 
@@ -204,4 +204,5 @@ IMAGE="$with_image"
 
 AC_SUBST(IMAGE)
 AC_SUBST(BRANDELF)
-AC_OUTPUT(Makefile)
+AC_CONFIG_FILES([Makefile])
+AC_OUTPUT
