@@ -30,6 +30,7 @@ GETOPT_C=""
 
 AC_CHECK_FUNCS(setenv)
 AC_CHECK_FUNCS(unsetenv)
+AC_CHECK_FUNCS([issetugid secure_getenv])
 AC_PATH_PROG(BRANDELF, brandelf, true)
 
 STATIC=""

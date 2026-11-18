@@ -2,6 +2,9 @@
 /* $Id: setupdb.c,v 1.89 2007-01-26 03:01:22 megastep Exp $ */
 
 #include "config.h"
+#if defined(HAVE_SECURE_GETENV) && !defined(_GNU_SOURCE)
+#define _GNU_SOURCE
+#endif
 #include <glob.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -251,8 +254,18 @@ static void insert_end_file(product_file_t *file, product_file_t **opt)
 
 static const char *registry_root_override(void)
 {
+    if (getuid() != geteuid() || getgid() != getegid())
+        return NULL;
+#ifdef HAVE_ISSETUGID
+    if (issetugid())
+        return NULL;
+#endif
+#ifdef HAVE_SECURE_GETENV
+    const char *root = secure_getenv("SETUPDB_ROOT");
+#else
     const char *root = getenv("SETUPDB_ROOT");
-    return getuid() == geteuid() && root && root[0] == '/' ? root : NULL;
+#endif
+    return root && root[0] == '/' ? root : NULL;
 }
 
 static const char *get_registry_root(void)
