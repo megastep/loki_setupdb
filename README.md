@@ -1,5 +1,5 @@
 
-# Loki SetupDB 1.6.5
+# Loki SetupDB 2.0.0
 
 
 ## Introduction
@@ -27,9 +27,9 @@ The default target builds `<arch>/libsetupdb.a` and records its libxml ABI in
 `<arch>/xml-major`. Keep this checkout beside
 `loki_setup` so its configure script can find the archive and public headers.
 The optional `make convert md5sum` targets build the manifest conversion and
-checksum tools. Libxml2 is the default. Use `--without-libxml2` for a legacy
-libxml 1 build. Run `make dist` to package a source release in the parent
-directory.
+checksum tools. The build requires libxml2. Run `make dist` to package a
+source release in the parent directory. SetupDB 2.0 continues to use the 1.6
+XML registry format.
 
 An absolute `SETUPDB_ROOT` selects a separate registry for disposable installs.
 The installer smoke test uses this to keep its product records in a temporary

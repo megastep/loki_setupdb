@@ -30,6 +30,10 @@
 #include "arch.h"
 #include "md5.h"
 
+/* The XML registry format is independent of the SetupDB release. */
+#define REGISTRY_VERSION_MAJOR 1
+#define REGISTRY_VERSION_MINOR 6
+
 typedef struct _loki_envvar_t 
 {
 	xmlNodePtr node;
@@ -461,8 +465,8 @@ product_t *loki_openproduct(const char *name)
     /* Check for the xmlversion attribute for backwards compatibility */
     str = (char *)xmlGetProp(XML_ROOT(doc), BAD_CAST "xmlversion");
     sscanf(str, "%d.%d", &major, &minor);
-    if ( (major > SETUPDB_VERSION_MAJOR) || 
-         ((major == SETUPDB_VERSION_MAJOR) && (minor > SETUPDB_VERSION_MINOR)) ) {
+    if ( (major > REGISTRY_VERSION_MAJOR) ||
+         ((major == REGISTRY_VERSION_MAJOR) && (minor > REGISTRY_VERSION_MINOR)) ) {
         fprintf(stderr, "Warning: This XML file was generated with a later version of setupdb (%d.%d).\n"
                 "Problems may occur.\n", major, minor);
     }
@@ -717,7 +721,7 @@ product_t *loki_create_product(const char *name, const char *root, const char *d
     } else {
         *prod->info.description = '\0';
     }
-    snprintf(homefile, sizeof(homefile), "%d.%d", SETUPDB_VERSION_MAJOR, SETUPDB_VERSION_MINOR);
+    snprintf(homefile, sizeof(homefile), "%d.%d", REGISTRY_VERSION_MAJOR, REGISTRY_VERSION_MINOR);
     xmlSetProp(XML_ROOT(doc), BAD_CAST "xmlversion", BAD_CAST homefile);
     strncpy(prod->info.root, myroot, sizeof(prod->info.root));
     xmlSetProp(XML_ROOT(doc), BAD_CAST "root", BAD_CAST myroot);

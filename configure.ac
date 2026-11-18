@@ -1,5 +1,5 @@
 AC_PREREQ([2.69])
-AC_INIT([Loki SetupDB], [1.6.5], [], [setupdb])
+AC_INIT([Loki SetupDB], [2.0.0], [], [setupdb])
 AC_CONFIG_SRCDIR([setupdb.c])
 AC_CONFIG_HEADERS([config.h])
 
@@ -123,19 +123,15 @@ AC_SUBST(SETUPDB_VERSION_MINOR)
 AC_SUBST(SETUPDB_VERSION_RELEASE)
 AC_SUBST(GETOPT_C)
 
-AC_ARG_WITH([libxml2], AS_HELP_STRING([--without-libxml2], [use legacy libxml 1 instead]), [], [with_libxml2=yes])
+AC_ARG_WITH([libxml2], AS_HELP_STRING([--with-libxml2], [use libxml2 (required)]), [], [with_libxml2=yes])
 AC_PATH_TOOL([PKG_CONFIG], [pkg-config])
-if test "$with_libxml2" != no && test -n "$PKG_CONFIG" && "$PKG_CONFIG" --exists libxml-2.0; then
+AS_IF([test "$with_libxml2" = no], [AC_MSG_ERROR([libxml2 is required])])
+if test -n "$PKG_CONFIG" && "$PKG_CONFIG" --exists libxml-2.0; then
     XML_CFLAGS=`$PKG_CONFIG --cflags libxml-2.0`
     XML_LIBS=`$PKG_CONFIG --libs libxml-2.0`
 else
-    if test "$with_libxml2" = no; then
-        AC_PATH_PROG([XML_CONFIG], [xml-config])
-    else
-        AC_PATH_PROG([XML2_CONFIG], [xml2-config])
-        XML_CONFIG=$XML2_CONFIG
-    fi
-    AS_IF([test -z "$XML_CONFIG"], [AC_MSG_ERROR([install the libxml development files and pkg-config])])
+    AC_PATH_PROG([XML_CONFIG], [xml2-config])
+    AS_IF([test -z "$XML_CONFIG"], [AC_MSG_ERROR([install the libxml2 development files and pkg-config])])
     XML_CFLAGS=`$XML_CONFIG --cflags`
     XML_LIBS=`$XML_CONFIG --libs`
 fi
