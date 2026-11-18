@@ -127,9 +127,8 @@ int convert_uninstall(const char *path, const char *name, const char *vername,
             option = loki_create_option(component, "Default Option", NULL);
 
             /* Parse the file, 'rm -f' lines are files, 'rmdir' are directories */
-            while ( ! feof(script) ) {
+            while ( fscanf(script, "%9s", word) == 1 ) {
                 const char *str;
-                fscanf(script, "%10s", word);
                 /* Warning: the following code will not work if spaces are in the path name */
                 if ( !strcmp(word, "rm") ) {
                     parse_line(" -f \"", file, sizeof(file), script);

@@ -12,3 +12,17 @@ amd64
 ppc
 hppa
 *~
+config.guess
+config.sub
+install-sh
+*.o
+*.a
+/md5sum
+/convert
+/brandelf
+*.d
+
+/uninstaller.inc
+/uninstaller.inc.tmp
+*/xml-major
+*/xml-major.tmp
