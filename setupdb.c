@@ -2,6 +2,9 @@
 /* $Id: setupdb.c,v 1.89 2007-01-26 03:01:22 megastep Exp $ */
 
 #include "config.h"
+#if defined(HAVE_SECURE_GETENV) && !defined(_GNU_SOURCE)
+#define _GNU_SOURCE
+#endif
 #include <glob.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -29,6 +32,10 @@
 #include "setupdb.h"
 #include "arch.h"
 #include "md5.h"
+
+/* The XML registry format is independent of the SetupDB release. */
+#define REGISTRY_VERSION_MAJOR 1
+#define REGISTRY_VERSION_MINOR 6
 
 typedef struct _loki_envvar_t 
 {
@@ -245,6 +252,32 @@ static void insert_end_file(product_file_t *file, product_file_t **opt)
     }
 }
 
+static const char *registry_root_override(void)
+{
+    if (getuid() != geteuid() || getgid() != getegid())
+        return NULL;
+#ifdef HAVE_ISSETUGID
+    if (issetugid())
+        return NULL;
+#endif
+#ifdef HAVE_SECURE_GETENV
+    const char *root = secure_getenv("SETUPDB_ROOT");
+#else
+    const char *root = getenv("SETUPDB_ROOT");
+#endif
+    return root && root[0] == '/' ? root : NULL;
+}
+
+static const char *get_registry_root(void)
+{
+    static char root[PATH_MAX];
+    const char *override = registry_root_override();
+    if (override)
+        return override;
+    snprintf(root, sizeof(root), "%s/" LOKI_DIRNAME, detect_home());
+    return root;
+}
+
 static const char *get_xml_base(void)
 {
     const char *base;
@@ -260,7 +293,7 @@ const char *loki_getfirstproduct(void)
 {
     char buf[PATH_MAX];
 
-    snprintf(buf, sizeof(buf), "%s/" LOKI_DIRNAME "/installed/%s/*.xml", detect_home(), get_xml_base());
+    snprintf(buf, sizeof(buf), "%s/installed/%s/*.xml", get_registry_root(), get_xml_base());
     if ( glob(buf, GLOB_ERR, NULL, &globbed) != 0 ) {
         return NULL;
     } else {
@@ -386,7 +419,7 @@ product_t *loki_openproduct(const char *name)
         /* Look for a matching case-insensitive file */
         static glob_t xmls;
         
-        snprintf(buf, sizeof(buf), "%s/" LOKI_DIRNAME "/installed/%s/*.xml", detect_home(), get_xml_base());
+        snprintf(buf, sizeof(buf), "%s/installed/%s/*.xml", get_registry_root(), get_xml_base());
         if ( glob(buf, GLOB_ERR, NULL, &xmls) != 0 ) {
             return NULL;
         } else {
@@ -445,8 +478,8 @@ product_t *loki_openproduct(const char *name)
     /* Check for the xmlversion attribute for backwards compatibility */
     str = (char *)xmlGetProp(XML_ROOT(doc), BAD_CAST "xmlversion");
     sscanf(str, "%d.%d", &major, &minor);
-    if ( (major > SETUPDB_VERSION_MAJOR) || 
-         ((major == SETUPDB_VERSION_MAJOR) && (minor > SETUPDB_VERSION_MINOR)) ) {
+    if ( (major > REGISTRY_VERSION_MAJOR) ||
+         ((major == REGISTRY_VERSION_MAJOR) && (minor > REGISTRY_VERSION_MINOR)) ) {
         fprintf(stderr, "Warning: This XML file was generated with a later version of setupdb (%d.%d).\n"
                 "Problems may occur.\n", major, minor);
     }
@@ -643,7 +676,7 @@ product_t *loki_create_product(const char *name, const char *root, const char *d
     product_t *prod;
 
 	/* Create hierarchy if it doesn't exist already */
-	snprintf(homefile, sizeof(homefile), "%s/" LOKI_DIRNAME, detect_home());
+	snprintf(homefile, sizeof(homefile), "%s", get_registry_root());
 	mkdir(homefile, 0700);
 
 	strncat(homefile, "/installed", sizeof(homefile)-strlen(homefile)-1);
@@ -701,7 +734,7 @@ product_t *loki_create_product(const char *name, const char *root, const char *d
     } else {
         *prod->info.description = '\0';
     }
-    snprintf(homefile, sizeof(homefile), "%d.%d", SETUPDB_VERSION_MAJOR, SETUPDB_VERSION_MINOR);
+    snprintf(homefile, sizeof(homefile), "%d.%d", REGISTRY_VERSION_MAJOR, REGISTRY_VERSION_MINOR);
     xmlSetProp(XML_ROOT(doc), BAD_CAST "xmlversion", BAD_CAST homefile);
     strncpy(prod->info.root, myroot, sizeof(prod->info.root));
     xmlSetProp(XML_ROOT(doc), BAD_CAST "root", BAD_CAST myroot);
@@ -885,7 +918,7 @@ int loki_removeproduct(product_t *product)
         perror("Could not remove install directory");
 
     /* Remove the symlink */
-    snprintf(buf, sizeof(buf), "%s/" LOKI_DIRNAME "/installed/%s/%s.xml", detect_home(), get_xml_base(), product->info.name);
+    snprintf(buf, sizeof(buf), "%s/installed/%s/%s.xml", get_registry_root(), get_xml_base(), product->info.name);
     unlink(buf);
 
 	/* Change the flag so we won't try to save the file */
@@ -2237,13 +2270,68 @@ static const char *copy_binary_to_tmp(const char *path)
 /* Perform automatic update of the uninstaller binaries and script.
    'src' is the path where updated binaries can be copied from.
  */
+static void write_shell_assignment(FILE *out, const char *name, const char *value)
+{
+    fprintf(out, "%s='", name);
+    for (; *value; ++value) {
+        if (*value == '\'')
+            fputs("'\\''", out);
+        else
+            fputc(*value, out);
+    }
+    fputs("'\n", out);
+}
+
+static int write_uninstaller(product_info_t *product)
+{
+    char script_path[PATH_MAX], temporary[PATH_MAX], registry_bin[PATH_MAX];
+    static const char script[] =
+#include "uninstaller.inc"
+    ;
+
+    if (snprintf(script_path, sizeof(script_path), "%s/uninstall", product->root) >= sizeof(script_path) ||
+        snprintf(temporary, sizeof(temporary), "%s.XXXXXX", script_path) >= sizeof(temporary) ||
+        snprintf(registry_bin, sizeof(registry_bin), "%s/installed/bin", get_registry_root()) >= sizeof(registry_bin))
+        return -1;
+
+    int fd = mkstemp(temporary);
+    if (fd < 0)
+        return -1;
+    FILE *out = fdopen(fd, "w");
+    if (!out) {
+        close(fd);
+        unlink(temporary);
+        return -1;
+    }
+
+    fprintf(out, "#!/bin/sh\n#### UNINSTALL SCRIPT - Generated by SetupDB %d.%d #####\n",
+            SETUPDB_VERSION_MAJOR, SETUPDB_VERSION_MINOR);
+    const char *override = registry_root_override();
+    if (override) {
+        write_shell_assignment(out, "SETUPDB_ROOT", override);
+        fputs("export SETUPDB_ROOT\n", out);
+    }
+    write_shell_assignment(out, "registry_bin", registry_bin);
+    write_shell_assignment(out, "vendor_uninstall", LOKI_PREFIX "-uninstall");
+    write_shell_assignment(out, "product", product->name);
+    write_shell_assignment(out, "manifest", product->registry_path);
+    fputs(script, out);
+
+    int failed = ferror(out) || fchmod(fd, 0755) < 0;
+    if (fclose(out) != 0)
+        failed = 1;
+    if (failed || rename(temporary, script_path) < 0) {
+        unlink(temporary);
+        return -1;
+    }
+    return 0;
+}
+
 int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char *locale_path)
 {
     char binpath[PATH_MAX];
     const char *os_name = detect_os();
     int perform_upgrade = 0;
-    product_info_t *pinfo;
-    FILE *scr;
 	FILE *src, *dst;
 	const char *lang;
 	void *data;
@@ -2252,10 +2340,10 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
 
     /* TODO: Locate global loki-uninstall and upgrade it if we have sufficient permissions */    
 
-    snprintf(binpath, sizeof(binpath), "%s/" LOKI_DIRNAME "/installed/locale", detect_home());
+    snprintf(binpath, sizeof(binpath), "%s/installed/locale", get_registry_root());
     mkdir(binpath, 0755);
 
-    snprintf(binpath, sizeof(binpath), "%s/" LOKI_DIRNAME "/installed/bin", detect_home());
+    snprintf(binpath, sizeof(binpath), "%s/installed/bin", get_registry_root());
     mkdir(binpath, 0755);
 
     strncat(binpath, "/", sizeof(binpath)-strlen(binpath)-1);
@@ -2365,7 +2453,7 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
 			src = fopen(binpath, "rb");
 			if ( src ) {
 				/* Start by creating the directories */
-				snprintf(binpath, sizeof(binpath), "%s/" LOKI_DIRNAME "/installed/locale/%.5s", detect_home(),
+				snprintf(binpath, sizeof(binpath), "%s/installed/locale/%.5s", get_registry_root(),
 						 lang);
 				mkdir(binpath, 0755);
 				
@@ -2373,8 +2461,8 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
 				mkdir(binpath, 0755);
 
 				snprintf(binpath, sizeof(binpath),
-						 "%s/" LOKI_DIRNAME "/installed/locale/%.5s/LC_MESSAGES/loki-uninstall.mo",
-						 detect_home(), lang);
+						 "%s/installed/locale/%.5s/LC_MESSAGES/loki-uninstall.mo",
+						 get_registry_root(), lang);
 				dst = fopen(binpath, "wb");
 				if ( dst ) {
 					data = malloc(st.st_size);
@@ -2388,94 +2476,9 @@ int loki_upgrade_uninstall(product_t *product, const char *src_bins, const char 
 		}
 	}
 
-    /* Now we create an 'uninstall' shell script in the game's installation directory */
-    pinfo = loki_getinfo_product(product);
-    snprintf(binpath, sizeof(binpath), "%s/uninstall", pinfo->root);
-    scr = fopen(binpath, "w");
-    if ( scr ) {
-        fprintf(scr,
-                "#! /bin/sh\n"
-                "#### UNINSTALL SCRIPT - Generated by SetupDB %d.%d #####\n"
-                "DetectARCH()\n"
-                "{\n"
-                "        status=1\n"
-                "        case `uname -m` in\n"
-                "           amd64 | x86_64)  echo \"amd64\"\n"
-                "                  status=0;;\n"
-                "           i?86 | i86*)  echo \"x86\"\n"
-                "                  status=0;;\n"
-				"           90*/*)\n"
-				"		   echo \"hppa\"\n"
-				"		   status=0;;\n"
-				"	    *)\n"
-				"		case `uname -s` in\n"
-				"		    IRIX*)\n"
-				"			echo \"mips\"\n"
-				"			status=0;;\n"
-				"           AIX*)\n"
-				"           echo \"ppc\"\n"
-				"           status=0;;\n"
-				"		    *)\n"
-				"			arch=`uname -p 2>/dev/null || uname -m`\n"
-				"                       if test \"$arch\" = powerpc; then\n"
-				"                          echo \"ppc\"\n"
-				"                       else\n"
-				"                          echo $arch\n"
-				"                       fi\n"
-				"			status=0;;\n"
-				"		esac\n"
-				"        esac\n"
-                "        return $status\n"
-                "}\n\n"
-
-				"DetectOS()\n"
-				"{\n"
-				"  os=`uname -s`\n"
-				"  if test \"$os\" = OpenUNIX; then\n"
-				"     echo SCO_SV\n"
-				"  else\n"
-				"     echo $os\n"
-				"  fi\n"
-				"  return 0\n"
-				"}\n\n"
-
-				"FindBinary()\n"
-				"{\n"
-				"  arch=$1\n"
-				"  if which " LOKI_PREFIX "-uninstall 2> /dev/null > /dev/null || type -p " LOKI_PREFIX "-uninstall 2> /dev/null > /dev/null; then\n"
-				"    if " LOKI_PREFIX "-uninstall -v > /dev/null 2> /dev/null; then\n"
-				"        echo `exec 2>&-; which " LOKI_PREFIX "-uninstall || type " LOKI_PREFIX "-uninstall`\n"
-				"    else\n"
-				"        echo \"$HOME/" LOKI_DIRNAME "/installed/bin/`DetectOS`/$arch/uninstall\"\n"
-				"    fi\n"
-				"  else\n"
-				"    echo \"$HOME/" LOKI_DIRNAME "/installed/bin/`DetectOS`/$arch/uninstall\"\n"
-				"  fi\n"
-				"}\n\n"
-
-				"arch=`DetectARCH`\n"
-				"UNINSTALL=`FindBinary $arch`\n"
-				"\n"
-				"# Special case: if amd64 and binary is missing, try to run x86 build...\n"
-				"if test ! -x \"$UNINSTALL\" ; then\n"
-				"  if test \"$arch\" = amd64 ; then\n"
-				"    UNINSTALL=`FindBinary x86`\n"
-				"  fi\n"
-				"fi\n\n"
-
-				"if test ! -x \"$UNINSTALL\" ; then\n"
-				"    echo Could not find a usable uninstall program. Aborting.\n"
-				"    exit 1\n"
-				"fi\n\n"
-
-                "exec \"$UNINSTALL\" -L %s \"%s\" \"$1\"\n\n",
-                SETUPDB_VERSION_MAJOR, SETUPDB_VERSION_MINOR,
-				pinfo->name,
-                pinfo->registry_path);
-        fchmod(fileno(scr), 0755);
-        fclose(scr);
-    } else {
-        fprintf(stderr, "Could not write uninstall script: %s\n", binpath);
+    if (write_uninstaller(loki_getinfo_product(product)) < 0) {
+        fprintf(stderr, "Could not write uninstall script in %s\n", loki_getinfo_product(product)->root);
+        return -1;
     }
     return 0;
 }

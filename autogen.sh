@@ -1,4 +1,4 @@
 #!/bin/sh
-autoheader
-autoconf
-echo "Now you are ready to run ./configure"
+set -eu
+cd "$(dirname "$0")"
+exec autoreconf --force --install

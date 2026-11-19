@@ -23,37 +23,56 @@ LIBS	= @LIBS@
 
 IMAGE	= @IMAGE@
 
-override TARGET = $(ARCH)/libsetupdb.a
+TARGET = $(ARCH)/libsetupdb.a
 
-all: $(TARGET)
+.PHONY: all check clean mostlyclean distclean dist
+all: $(ARCH)/xml-major
+
+check: setupdb md5sum
+	sh -n uninstaller.sh
+	@unset SETUP_ARCH; ./setupdb probe sysinfo | grep -F "Arch='$(ARCH)'"
+	@set -e; input=$$(mktemp); trap 'rm -f "$$input"' 0; \
+	printf abc > "$$input"; \
+	test "$$(./md5sum "$$input")" = "900150983cd24fb0d6963f7d28e17f72  $$input"
 
 $(ARCH):
 	mkdir $(ARCH)
 
-$(ARCH)/%.o: %.c
-	$(CC) -o $@ $(CFLAGS) -c $<
+$(ARCH)/%.o: %.c config.h Makefile | $(ARCH)
+	$(CC) $(CFLAGS) @DEPFLAGS@ -c $< -o $@
 
-$(TARGET): $(ARCH) $(OBJS)
+$(TARGET): $(OBJS) Makefile | $(ARCH)
+	rm -f $@
 	$(AR) rcs $@ $(OBJS)
 
-convert: $(ARCH) $(ARCH)/convert.o $(TARGET)
-	$(CC) -g -o $@ $(ARCH)/convert.o $(TARGET) $(LIBS) @STATIC@
+$(ARCH)/xml-major: $(TARGET) Makefile
+	printf '%s\n' '@SETUPDB_XML_MAJOR@' > $@.tmp
+	mv $@.tmp $@
+
+uninstaller.inc: uninstaller.sh Makefile
+	sed -e 's/[\\"]/\\&/g' -e 's/^/"/' -e 's/$$/\\n"/' $< > $@.tmp
+	mv $@.tmp $@
+
+$(ARCH)/setupdb.o: uninstaller.inc
+
+convert: $(ARCH)/convert.o $(TARGET)
+	$(CC) @LDFLAGS@ -g -o $@ $(ARCH)/convert.o $(TARGET) $(LIBS) @STATIC@
 	strip $@
 	@BRANDELF@ -t $(OS) $@
 
 install-convert: convert
 	cp convert $(IMAGE)/bin/$(OS)/$(ARCH)/
 
-brandelf: $(ARCH) $(ARCH)/brandelf.o
-	$(CC) -o $@ $(ARCH)/brandelf.o
+brandelf: $(ARCH)/brandelf.o
+	$(CC) @LDFLAGS@ -o $@ $(ARCH)/brandelf.o
 
-md5sum: md5.c
-	$(CC) $(CFLAGS) -o $@ md5.c -DMD5SUM_PROGRAM -lz @STATIC@
+md5sum: md5.c md5.h Makefile config.h
+	$(CC) @LDFLAGS@ $(CFLAGS) -o $@ md5.c -DMD5SUM_PROGRAM -lz @STATIC@
 	strip $@
 	@BRANDELF@ -t $(OS) $@
 
 setupdb: register.c $(TARGET)
-	$(CC) $(CFLAGS) -o $@ register.c $(TARGET) $(LIBS) @STATIC@
+	$(CC) @LDFLAGS@ $(CFLAGS) -o $@ register.c $(TARGET) $(LIBS) @STATIC@
 
 install-register: setupdb
 	strip setupdb
@@ -61,27 +80,27 @@ install-register: setupdb
 	cp setupdb $(IMAGE)/bin/$(OS)/$(ARCH)/
 
 clean:
-	rm -f $(ARCH)/*.o *~
+	rm -f $(ARCH)/*.o $(ARCH)/*.d $(TARGET) $(ARCH)/xml-major $(ARCH)/xml-major.tmp uninstaller.inc uninstaller.inc.tmp *~
 
 mostlyclean: clean
 	rm -f convert md5sum brandelf setupdb
-	rm -f Makefile config.cache config.status config.log
+	rm -f Makefile .depend config.h config.cache config.status config.log
 
 distclean: mostlyclean
-	rm -rf alpha ppc sparc64 x86
+	-test ! -d $(ARCH) || rmdir $(ARCH)
 
-dist: distclean
-	cp -r . $(DISTDIR)/$(PACKAGE)
-	(cd $(DISTDIR)/$(PACKAGE) && rm -r `find . -name CVS`)
-	(cd $(DISTDIR)/$(PACKAGE) && rm -r `find . -name .cvsignore`)
-	(cd $(DISTDIR) && tar zcvf $(PACKAGE).tar.gz $(PACKAGE))
-	rm -rf $(DISTDIR)/$(PACKAGE)
+DISTFILES = $(wildcard *.c *.h) configure.ac configure config.h.in config.guess \
+            config.sub uninstaller.sh autogen.sh Makefile Makefile.in CHANGES COPYING README.md .github .gitignore
 
-dep: depend
+dist:
+	@set -e; work=$$(mktemp -d); trap 'rm -rf "$$work"' 0; \
+	mkdir "$$work/$(PACKAGE)"; \
+	cp -R $(DISTFILES) "$$work/$(PACKAGE)/"; \
+	$(MAKE) -C "$$work/$(PACKAGE)" distclean; \
+	tar -C "$$work" -czf "$$work/release.tar.gz" "$(PACKAGE)"; \
+	mv "$$work/release.tar.gz" "$(DISTDIR)/$(PACKAGE).tar.gz"
 
-depend:
-	$(CC) -MM $(CFLAGS) $(CSRC) > .depend
+.PHONY: dep depend
+dep depend: all
 
-ifeq ($(wildcard .depend),.depend)
-include .depend
-endif
+-include $(wildcard $(ARCH)/*.d)

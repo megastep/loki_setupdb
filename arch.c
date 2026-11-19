@@ -40,6 +40,8 @@ const char *detect_arch(void)
 	arch = "hppa";
 #elif defined(ia64)
 	arch = "ia64";
+#elif defined(__aarch64__) || defined(__arm64__)
+        arch = "aarch64";
 #elif defined(__arm__)
         arch = "arm";
 #elif defined(mips)

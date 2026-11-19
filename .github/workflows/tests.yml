@@ -1,0 +1,84 @@
+name: Tests
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: ${{ matrix.runner }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        runner: [ubuntu-24.04, ubuntu-24.04-arm, macos-15]
+
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends autoconf automake pkg-config libxml2-dev zlib1g-dev
+      - name: Install macOS dependencies
+        if: runner.os == 'macOS'
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: '1'
+        run: |
+          brew install autoconf automake pkgconf libxml2
+          echo "PKG_CONFIG_PATH=$(brew --prefix libxml2)/lib/pkgconfig" >> "$GITHUB_ENV"
+      - name: Build SetupDB and run checks
+        run: |
+          ./autogen.sh
+          ./configure
+          make -j2 all convert check
+
+  bsd:
+    name: ${{ matrix.os }} / VMActions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [FreeBSD, OpenBSD]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - name: Build and test on FreeBSD
+        if: matrix.os == 'FreeBSD'
+        uses: vmactions/freebsd-vm@811efaaac0668df8bfb8308c3ec997b5ab50037b # v1.6.0
+        with:
+          release: '15.1'
+          sync: rsync
+          copyback: false
+          prepare: pkg install -y autoconf automake gmake libxml2 pkgconf
+          run: &bsd_build |
+            set -eu
+            if [ "$(uname -s)" = OpenBSD ]; then
+              export AUTOCONF_VERSION=2.73 AUTOMAKE_VERSION=1.19
+            fi
+            ./autogen.sh
+            ./configure
+            gmake -j2 all convert check
+      - name: Build and test on OpenBSD
+        if: matrix.os == 'OpenBSD'
+        uses: vmactions/openbsd-vm@f1ca8bc8ecc5b6ef7218e5b914836e067e1546d3 # v1.4.9
+        with:
+          release: '8.0'
+          sync: rsync
+          copyback: false
+          prepare: pkg_add autoconf%2.73 automake%1.19 gmake libxml libiconv pkgconfig
+          run: *bsd_build
